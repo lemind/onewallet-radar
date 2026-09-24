@@ -11,13 +11,13 @@
 > |---|---|---|
 > | 1 | Turn off Deployment Protection in the Vercel dashboard | Nothing can be tried until this is off; it is a toggle, not a task |
 > | 2 | Send the URL round, use it on real leads | The next decisions should come from a real run, not a guess |
-> | 3 | Places enrichment: **name, phone, address** (T036-T038, T040-T041) | The lead is only actionable with a phone number |
-> | 4 | Venue cache (T039) | Only once enrichment exists — it is what stops re-billing the same venues |
-> | 5 | Password protection (T032) | Only once a key exists — protects spend, not privacy |
-> | 6 | Copy and phone-width polish (T034, T045) | After someone has actually used it |
+> | 3 | ~~Places enrichment~~ | **CUT** — Meetup already gives name and address; Places added only a phone number, at the cost of a billed Google Cloud project. See the Phase 6 header |
 >
-> **Cut for good:** district column and district filtering, Google rating, query cache,
-> Redis for anything but the venue cache, login before step 5, Eventbrite.
+> Steps 1 and 2 are the whole remaining list, and neither is a coding task.
+>
+> **Cut for good:** Places enrichment and everything it dragged in (Google Cloud
+> project, API key, password protection, venue cache, Redis), the district column
+> and district filtering, Google rating, the query cache, and Eventbrite.
 >
 > **Do not port `prototype/scrape.py`.** It has four confirmed bugs. The TypeScript was
 > written fresh against `tests/fixtures/meetup-chiang-mai.html` and fixes all four.
@@ -148,25 +148,38 @@ that already exists.
 
 ---
 
-## Phase 6: User Story 3 — Contact details attached to each lead (P3)
+## Phase 6: ~~Contact details attached to each lead~~ — CUT 24 Sep
 
-**Goal**: District, phone and website populate for confidently matched venues.
+**Cut, not deferred to a date.** The brief asked for business name, phone and
+address. Measured against the committed fixture, Meetup already supplies
+**venue name 10/12, street address 10/12, organizer 12/12, organizer URL
+12/12** — for free, with no key. Google Places would have added exactly one
+field: the phone number.
 
-**Independent test**: Run a Chiang Mai search with enrichment enabled; matched
-venues carry contact details, unverified ones carry none, and a repeat run
-triggers no new billable lookups.
+The price of that one field: a Google Cloud project with billing enabled (the
+only way a Places key can exist), a key to restrict and protect, password
+protection on the deployment because a public Run button would then spend money,
+a venue cache so repeat runs do not re-bill, and the wrong-business matching risk
+that T037 existed to contain — a confidently wrong phone number is worse than no
+phone number, since the output drives calls to real businesses.
 
-**This phase is the only one requiring a paid API key.**
+A BD user holding the business name, the street address and a link to the event
+page can find a phone number in seconds, and is calling a human regardless.
 
-- [ ] T036 [US3] Implement `src/lib/places.ts` — Text Search with an explicit field mask limited to **name, phone and address**. No `rating`, no district: a phone number is what makes a lead actionable, and district was cut with the filter it existed for
-- [ ] T037 [US3] Implement the match confidence gate in `src/lib/places.ts` — candidate #1 only, normalize names by lowercasing and stripping punctuation and generic words, then accept **only** an exact match of the normalized strings with the returned address containing the requested city. Anything else is `unmatched`. No similarity score, no threshold, no fuzzy matcher — a wrong business is worse than a missing one
-- [ ] T038 [US3] Set `venueMatch` to `"matched"` or `"unmatched"` in `src/lib/places.ts`, attaching all three fields or none — never a partial fill
-- [ ] T026 [US3] Enforce the all-or-nothing invariant at the **enrichment boundary** in `src/lib/places.ts` — `venueMatch !== "matched"` must always produce null `district`, `phone` and `website`. It cannot live in `normalize.ts`: those fields do not exist until this phase
-- [ ] T039 [US3] Implement `src/lib/cache.ts` — venue cache keyed by `{city}:{normalizedVenueName}` — **not** `place_id`, which is unknown until after the very lookup the cache exists to avoid — storing `{ placeId, district, phone, website }` with a 7-day TTL, and a separate failed-lookup cache keyed by normalized venue name plus city with a 1-hour TTL, backed by Redis from the Vercel Marketplace
-- [ ] T040 [US3] Wire enrichment into `src/app/api/run/route.ts` — deduplicate venues before lookup (29 unique per 30 events), check the cache before any request, run lookups concurrently, and append to `errors[]` on failure **without** discarding events
-- [ ] T032 [US3] **Before the key goes in**, put the deployment behind Vercel Password Protection — one shared password, no accounts for Sunny to create. From here a public URL is a billing risk, not just an open page. If password protection is not available on the current plan, cap spend instead: a per-run venue-lookup limit plus a Google Cloud budget alert
-- [ ] T041 [US3] Add `GOOGLE_PLACES_API_KEY` and `REDIS_URL` to the Vercel project, restricting the key by API in Google Cloud
-- [ ] T042 [US3] Verify per [quickstart.md](./quickstart.md) — unverified rows carry empty contact columns, a repeat search triggers no new billable lookups, and removing the key still returns events with a warning
+**Revisit when there is evidence, not before**: if the team uses the tool for a
+week and asks for phone numbers, that is the signal. The design slots back in
+cleanly behind a `venueMatch` flag — the tasks below are kept as the record of
+how, not as work to schedule.
+
+- [~] T036 CUT 24 Sep — see the Phase 6 header. Original: Implement `src/lib/places.ts` — Text Search with an explicit field mask limited to **name, phone and address**. No `rating`, no district: a phone number is what makes a lead actionable, and district was cut with the filter it existed for
+- [~] T037 CUT 24 Sep — see the Phase 6 header. Original: Implement the match confidence gate in `src/lib/places.ts` — candidate #1 only, normalize names by lowercasing and stripping punctuation and generic words, then accept **only** an exact match of the normalized strings with the returned address containing the requested city. Anything else is `unmatched`. No similarity score, no threshold, no fuzzy matcher — a wrong business is worse than a missing one
+- [~] T038 CUT 24 Sep — see the Phase 6 header. Original: Set `venueMatch` to `"matched"` or `"unmatched"` in `src/lib/places.ts`, attaching all three fields or none — never a partial fill
+- [~] T026 CUT 24 Sep — see the Phase 6 header. Original: Enforce the all-or-nothing invariant at the **enrichment boundary** in `src/lib/places.ts` — `venueMatch !== "matched"` must always produce null `district`, `phone` and `website`. It cannot live in `normalize.ts`: those fields do not exist until this phase
+- [~] T039 CUT 24 Sep — see the Phase 6 header. Original: Implement `src/lib/cache.ts` — venue cache keyed by `{city}:{normalizedVenueName}` — **not** `place_id`, which is unknown until after the very lookup the cache exists to avoid — storing `{ placeId, district, phone, website }` with a 7-day TTL, and a separate failed-lookup cache keyed by normalized venue name plus city with a 1-hour TTL, backed by Redis from the Vercel Marketplace
+- [~] T040 CUT 24 Sep — see the Phase 6 header. Original: Wire enrichment into `src/app/api/run/route.ts` — deduplicate venues before lookup (29 unique per 30 events), check the cache before any request, run lookups concurrently, and append to `errors[]` on failure **without** discarding events
+- [~] T032 CUT 24 Sep — see the Phase 6 header. Original: **Before the key goes in**, put the deployment behind Vercel Password Protection — one shared password, no accounts for Sunny to create. From here a public URL is a billing risk, not just an open page. If password protection is not available on the current plan, cap spend instead: a per-run venue-lookup limit plus a Google Cloud budget alert
+- [~] T041 CUT 24 Sep — see the Phase 6 header. Original: Add `GOOGLE_PLACES_API_KEY` and `REDIS_URL` to the Vercel project, restricting the key by API in Google Cloud
+- [~] T042 CUT 24 Sep — see the Phase 6 header. Original: Verify per [quickstart.md](./quickstart.md) — unverified rows carry empty contact columns, a repeat search triggers no new billable lookups, and removing the key still returns events with a warning
 
 **Checkpoint**: Leads are directly workable and sortable by district.
 
