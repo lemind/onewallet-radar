@@ -106,24 +106,25 @@ that sorting the spreadsheet by district groups leads by area.
 
 ---
 
-### User Story 4 - Only the team can run it (Priority: P2)
+### User Story 4 - Runs cannot be spent by strangers (Priority: P3)
 
-The tool is reachable only by the internal team. Someone who finds or is
-forwarded the URL cannot use it.
+Once a Run can spend money, the tool is not reachable by whoever holds the URL.
 
-**Why this priority**: Each Run spends money on an external lookup service and
-consumes the goodwill of the event source. An open endpoint is a cost and
-reputation risk, not merely a privacy one. It ships with the first deployment.
+**Why this priority**: The trigger is **cost, not privacy**. Until the place
+lookup is wired in, a Run spends nothing — it fetches one public listing page
+that anyone could open directly — so there is nothing to protect and a login
+would only stand between the team and the tool. This ships **with** the lookup
+service, not before it.
 
-**Independent Test**: Open the deployed URL while signed out of the team account
-and confirm access is refused before any search can be run.
+**Independent Test**: With the lookup key configured, confirm a stranger holding
+the URL cannot trigger a billable run.
 
 **Acceptance Scenarios**:
 
-1. **Given** a person outside the team holding the URL, **When** they open it,
-   **Then** they are refused access and cannot trigger a search.
-2. **Given** a team member, **When** they open the URL, **Then** they reach the
-   search page without a separate account or password for this tool.
+1. **Given** the tool before any lookup key exists, **When** a team member opens
+   the URL, **Then** they reach the search page with no account and no password.
+2. **Given** the tool after a lookup key is configured, **When** someone outside
+   the team opens the URL, **Then** they cannot trigger a billable run.
 
 ---
 
@@ -207,7 +208,9 @@ and confirm access is refused before any search can be run.
   the event source itself is unreachable.
 - **FR-021**: The system MUST distinguish "no events found" from "the search
   failed" in what it shows the user.
-- **FR-022**: The system MUST restrict access to members of the internal team.
+- **FR-022**: The system MUST prevent strangers from triggering billable runs
+  once an external lookup key is configured. Before that point it MUST NOT
+  require any sign-in.
 
 **Cost control**
 

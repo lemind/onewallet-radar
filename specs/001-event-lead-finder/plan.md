@@ -156,7 +156,7 @@ serves Vercel's datacenter IPs at all.**
 ## Phase 2 — Implementation Sequence
 
 Mapped from `SPEC.md` §11. Each phase is independently verifiable, and the
-tool is genuinely usable from Phase 6 onward.
+tool is genuinely usable from Phase 5 onward.
 
 | Phase | Deliverable | Gate to pass | Key |
 |---|---|---|---|
@@ -165,7 +165,7 @@ tool is genuinely usable from Phase 6 onward.
 | 3 | `lib/normalize.ts` + `lib/time.ts` — filter, dedupe, local time | Dropped counts match the prototype; 11:00Z renders 18:00 | no |
 | 4 | `app/page.tsx` — city, date range, Run, results table | A person can run a search and read the result | no |
 | 5 | `/api/export.csv` — BOM, column order | Thai venue names open correctly in Excel | no |
-| 6 | **Deploy + Vercel Authentication (All Deployments) — ship to Sunny** | Signed-out visitor is refused; team member reaches the page | no |
+| 6 | **Deploy public and ship to Sunny — no login** | Anyone on the team opens the URL and runs a search with no sign-in | no |
 | 7 | `lib/places.ts` + `lib/cache.ts` — enrichment **with** its venue cache | Unverified venues carry no contact data; repeat runs re-bill nothing | **yes** |
 | 8 | Query cache | Only if someone asks for it | no |
 
@@ -174,7 +174,7 @@ architecture changes — the fetch moves to GitHub Actions on a schedule with
 committed JSON, and the app serves that instead. Nothing beyond Phase 1 should
 be written until it passes, and `/api/iptest` is deleted once it has.
 
-**Phase 6 is the delivery point.** Phases 2–6 produce a deployed, protected,
+**Phase 5 is the delivery point.** Phases 2–5 produce a deployed, protected,
 working tool with no external keys. It should reach Sunny before Phase 7 begins,
 so the first real feedback arrives while Places is still a decision rather than
 a dependency.

@@ -23,7 +23,7 @@ rewritten. See [research.md](./research.md) O1.
 - [ ] T001 Scaffold Next.js App Router app (TypeScript, Node 22) over the existing repo root, keeping `package.json` name, `.nvmrc`, `.editorconfig` and `tsconfig.json` intact
 - [ ] T002 Add `next`, `react`, `react-dom` to dependencies and `dev`, `build`, `start`, `test` scripts in `package.json`
 - [ ] T003 Create the throwaway gate route in `src/app/api/iptest/route.ts` — fetch the Meetup Chiang Mai listing with a desktop User-Agent and return `{ status, bytes, hasEventSchema, elapsedMs }`, where `hasEventSchema` tests for `"@type":"Event"` in the body
-- [ ] T004 **GATE** Deploy with `vercel deploy` and call `/api/iptest` 3–5 times over at least an hour; record every result in [research.md](./research.md) under O1. Pass requires status 200, plausible byte count and `hasEventSchema: true` on **every** attempt. Any failure stops the build and moves the fetch to a scheduled GitHub Action per [plan.md](./plan.md) Phase 1
+- [ ] T004 **GATE** Deploy with `vercel deploy` and call `/api/iptest` 5 times in immediate succession; record every result in [research.md](./research.md) under O1. Pass requires status 200, plausible byte count and `hasEventSchema: true` on **every** attempt. Any failure stops the build and moves the fetch to a scheduled GitHub Action per [plan.md](./plan.md) Phase 1
 - [ ] T005 Delete `src/app/api/iptest/route.ts` once T004 has passed
 
 **Checkpoint**: The architecture is proven. Everything below is safe to build.
@@ -62,8 +62,8 @@ row, readable in Excel with Thai characters intact.
 ### Normalize and filter
 
 - [ ] T014 [US1] Implement `src/lib/normalize.ts` — flatten `location.address` into a single string, lift venue and organizer, normalize an empty-string `endDate` to `null`, and map each record to `Event` with `venueMatch: "not_attempted"`
-- [ ] T015 [US1] Implement the five filter rules and their counters in `src/lib/normalize.ts` per [data-model.md](./data-model.md) — online, no-venue, no-date, out-of-range (with a 12-hour backward grace), duplicate `(source, url)` — then sort by `startUtc` ascending
-- [ ] T016 [P] [US1] Write `tests/normalize.test.ts` asserting the Chiang Mai fixture yields 12 kept events and dropped counts of 18 online / 0 no-venue / 0 no-date / 3 out-of-range / 3 duplicate
+- [ ] T015 [US1] Implement the five filter rules and their counters in `src/lib/normalize.ts` per [data-model.md](./data-model.md) — online, no-venue, no-date, out-of-range, duplicate `(source, url)` — then sort by `startUtc` ascending
+- [ ] T016 [P] [US1] Write `tests/normalize.test.ts` against a **fixed injected `now`**, not wall-clock time, or the fixture's out-of-range count drifts every day. Re-derive the expected dropped counts from the fixture at that fixed instant; the prototype's 18 online / 0 no-venue / 0 no-date / 3 out-of-range / 3 duplicate was measured **with** the 12-hour grace that T015 no longer applies
 
 ### Endpoint and page
 
@@ -75,8 +75,7 @@ row, readable in Excel with Thai characters intact.
 
 - [ ] T020 [P] [US1] Implement `src/lib/csv.ts` per [contracts/export.md](./contracts/export.md) — UTF-8 BOM prefix, the fixed 11-column order, `YYYY-MM-DD HH:MM` start formatting, empty cells for nulls, `\r\n` line endings, and quote-escaping for fields containing commas or quotes
 - [ ] T021 [P] [US1] Write `tests/csv.test.ts` asserting the output begins with bytes `EF BB BF`, that a Thai venue name survives a round trip, that a comma-containing address is quoted, and that the header is emitted for an empty result set
-- [ ] T022 [US1] Implement `src/app/api/export.csv/route.ts` — same pipeline and parameters as `/api/run`, returning `text/csv` with a `Content-Disposition` filename, and **JSON** rather than CSV on 400 and 502
-- [ ] T023 [US1] Wire a download button into `src/app/page.tsx` that calls the export endpoint with the current selection
+- [ ] T023 [US1] Wire a download button into `src/app/page.tsx` that builds the CSV **in the browser** from the `RunResult` already held in state and saves it via a Blob URL — no second request, no second scrape. `src/lib/csv.ts` must therefore stay browser-safe: no `Buffer`, no `fs`, and the UTF-8 BOM prepended as a `\uFEFF` string
 
 **Checkpoint**: The MVP works locally. A person can run a search and get a
 usable spreadsheet. This alone delivers the product's core value.
@@ -94,32 +93,34 @@ row is marked unverified, rather than filled with a near-match.
 
 - [ ] T024 [US2] Render each row's source link as a visible, clickable element in `src/app/page.tsx`, never a bare URL string
 - [ ] T025 [US2] Display the `venueMatch` state per row in `src/app/page.tsx` so verified and unverified rows are distinguishable at a glance
-- [ ] T026 [US2] Enforce the all-or-nothing invariant in `src/lib/normalize.ts` — assert that `venueMatch !== "matched"` implies `district`, `phone` and `website` are all null, so a future change cannot partially fill a row
 - [ ] T027 [US2] Distinguish the three outcomes in `src/app/page.tsx` — results, an explicit "no events in this range" empty state naming the city and dates, and a fetch failure — per FR-021
 - [ ] T028 [US2] Surface `errors[]` as a visible warning banner in `src/app/page.tsx` whenever it is non-empty alongside populated results
-- [ ] T029 [P] [US2] Display `dropped` counts somewhere unobtrusive in `src/app/page.tsx`, so a filter that starts misbehaving is noticeable
-- [ ] T030 [P] [US2] Add a `tests/csv.test.ts` case asserting a date-only event exports an empty time cell and never `00:00`
+- [ ] T029 [P] [US2] Render a single line above the table — `Showing N of M found` — from `dropped`. One line of text, not a panel: roughly half of raw results are filtered, and this answers the first question anyone asks when the list looks short
 
 **Checkpoint**: The output is safe to act on. Nothing is guessed, and every
 claim is checkable.
 
 ---
 
-## Phase 5: User Story 4 — Only the team can run it (P2) 🚢 DELIVERY POINT
+## Phase 5: Ship it 🚢 DELIVERY POINT
 
-**Goal**: Deployed, protected, and in Sunny's hands — with no API keys involved.
+**Goal**: Deployed and in Sunny's hands — no API keys, no login.
 
-**Independent test**: Open the production URL signed out of the team account and
-confirm access is refused before any search can run.
+**Independent test**: Open the production URL in a fresh browser and run a
+search without signing in to anything.
 
-- [ ] T031 [US4] Deploy to production with `vercel --prod`
-- [ ] T032 [US4] Enable Vercel Authentication with scope **All Deployments** — not the preview-only default, which would leave production open
-- [ ] T033 [US4] Verify in a signed-out private window that the production URL refuses access before any search runs, and that a team member reaches the page without a separate password
-- [ ] T034 [P] [US4] Confirm the page is usable at phone width, since the brief requires phone and laptop
-- [ ] T035 [US4] **Send the URL to Sunny.** Feedback should arrive while Places is still a decision rather than a dependency
+**No authentication.** This is an internal tool whose only capability at this
+point is scraping a public listing page. There is no key, no spend and no
+written data, so there is nothing to protect and a login would only stand
+between Sunny and the thing we want feedback on. Protection returns in Phase 6,
+where it is a cost control rather than a security measure — see T032.
 
-**Checkpoint**: A working, protected tool is in use. Everything below improves a
-product that already exists.
+- [ ] T031 Deploy to production with `vercel --prod` — public URL, unlisted, no deployment protection
+- [ ] T034 [P] Confirm the page is usable at phone width, since the brief requires phone and laptop
+- [ ] T035 **Send the URL to Sunny** — no account needed, no password to pass on. Feedback should arrive while Places is still a decision rather than a dependency
+
+**Checkpoint**: A working tool is in use. Everything below improves a product
+that already exists.
 
 ---
 
@@ -134,10 +135,12 @@ triggers no new billable lookups.
 **This phase is the only one requiring a paid API key.**
 
 - [ ] T036 [US3] Implement `src/lib/places.ts` — Text Search with an explicit field mask limited to district, phone and website, then Place Details only where required. **No `rating` field**, per [research.md](./research.md) D4
-- [ ] T037 [US3] Implement the match confidence gate in `src/lib/places.ts` — candidate #1 only, normalize names by lowercasing and stripping punctuation and generic words, apply a similarity threshold, and require the returned address to contain the requested city. Keep it dumb; this is not entity resolution
+- [ ] T037 [US3] Implement the match confidence gate in `src/lib/places.ts` — candidate #1 only, normalize names by lowercasing and stripping punctuation and generic words, then accept **only** an exact match of the normalized strings with the returned address containing the requested city. Anything else is `unmatched`. No similarity score, no threshold, no fuzzy matcher — a wrong business is worse than a missing one
 - [ ] T038 [US3] Set `venueMatch` to `"matched"` or `"unmatched"` in `src/lib/places.ts`, attaching all three fields or none — never a partial fill
-- [ ] T039 [US3] Implement `src/lib/cache.ts` — venue cache keyed by `place_id` with a 7-day TTL, and a separate failed-lookup cache keyed by normalized venue name plus city with a 1-hour TTL, backed by Redis from the Vercel Marketplace
+- [ ] T026 [US3] Enforce the all-or-nothing invariant at the **enrichment boundary** in `src/lib/places.ts` — `venueMatch !== "matched"` must always produce null `district`, `phone` and `website`. It cannot live in `normalize.ts`: those fields do not exist until this phase
+- [ ] T039 [US3] Implement `src/lib/cache.ts` — venue cache keyed by `{city}:{normalizedVenueName}` — **not** `place_id`, which is unknown until after the very lookup the cache exists to avoid — storing `{ placeId, district, phone, website }` with a 7-day TTL, and a separate failed-lookup cache keyed by normalized venue name plus city with a 1-hour TTL, backed by Redis from the Vercel Marketplace
 - [ ] T040 [US3] Wire enrichment into `src/app/api/run/route.ts` — deduplicate venues before lookup (29 unique per 30 events), check the cache before any request, run lookups concurrently, and append to `errors[]` on failure **without** discarding events
+- [ ] T032 [US3] **Before the key goes in**, put the deployment behind Vercel Password Protection — one shared password, no accounts for Sunny to create. From here a public URL is a billing risk, not just an open page. If password protection is not available on the current plan, cap spend instead: a per-run venue-lookup limit plus a Google Cloud budget alert
 - [ ] T041 [US3] Add `GOOGLE_PLACES_API_KEY` and `REDIS_URL` to the Vercel project, restricting the key by API in Google Cloud
 - [ ] T042 [US3] Verify per [quickstart.md](./quickstart.md) — unverified rows carry empty contact columns, a repeat search triggers no new billable lookups, and removing the key still returns events with a warning
 
@@ -190,7 +193,7 @@ unrelated files.
 **Phase 3**: T013, T016, T020 and T021 together once their subjects exist —
 parser tests, filter tests and the CSV module are independent.
 
-**Phase 4**: T029 and T030 together.
+**Phase 4**: T029 is the only parallelizable task.
 
 **Phase 7**: T043, T044 and T045 together.
 
@@ -227,12 +230,12 @@ porting bug, not a better idea. Restructure afterwards if there is a reason.
 |---|---|---|---|
 | 1 Setup + gate | — | T001–T005 | 5 |
 | 2 Foundational | — | T006–T010 | 5 |
-| 3 Get this week's leads | US1 (P1) | T011–T023 | 13 |
-| 4 Trust each lead | US2 (P2) | T024–T030 | 7 |
-| 5 Only the team can run it | US4 (P2) | T031–T035 | 5 |
-| 6 Contact details | US3 (P3) | T036–T042 | 7 |
+| 3 Get this week's leads | US1 (P1) | T011–T023 (no T022) | 12 |
+| 4 Trust each lead | US2 (P2) | T024–T029 (no T026, T030) | 5 |
+| 5 Ship it | — | T031, T034, T035 | 3 |
+| 6 Contact details | US3 (P3) | T036–T042 + T026, T032 | 9 |
 | 7 Polish | — | T043–T046 | 4 |
-| **Total** | | | **46** |
+| **Total** | | | **43** |
 
-Parallel opportunities: 13 tasks marked `[P]`.
-Tasks requiring an API key: 7 (all in Phase 6).
+Parallel opportunities: 12 tasks marked `[P]`.
+Tasks requiring an API key: 7 — every Phase 6 task except T026.
