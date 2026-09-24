@@ -10,12 +10,12 @@ function isoDate(d: Date): string {
 }
 
 const TODAY = isoDate(new Date());
-const IN_7 = isoDate(new Date(Date.now() + 7 * 864e5));
+const DEFAULT_TO = isoDate(new Date(Date.now() + 90 * 864e5));
 
 export default function Page() {
   const [city, setCity] = useState(CITIES[0].id);
   const [from, setFrom] = useState(TODAY);
-  const [to, setTo] = useState(IN_7);
+  const [to, setTo] = useState(DEFAULT_TO);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<RunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
