@@ -5,6 +5,8 @@ organizers — as partner leads for One Wallet.
 
 Pick a city and a date range, press Run, download a spreadsheet.
 
+**Live: https://onewallet-radar.vercel.app** — no login, no account.
+
 ## Why
 
 One Wallet's best partners come through events (nomad meetups, expat socials, tech
@@ -17,7 +19,11 @@ Each event yields two leads:
 
 ## Status
 
-**Working MVP.** Scrapes Meetup, filters, and exports CSV. Deployed on Vercel.
+**Working MVP, deployed.** Scrapes Meetup, filters, exports CSV.
+
+Verified in production on 24 Sep 2026: Chiang Mai 8 events, Bangkok 7, Phuket 4,
+no errors, ~1.8s per run. Meetup serves Vercel's datacenter IPs — that was the
+one architectural unknown and it is now answered from production, not a probe.
 
 No login, no database, no API keys. Venue contact enrichment (phone, website,
 district via Google Places) is designed but not built — see `SPEC.md` §9.4.
