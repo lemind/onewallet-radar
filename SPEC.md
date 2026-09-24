@@ -37,7 +37,7 @@ or the pitch for more than that is misleading.
 3–5 internal staff (BD, Partnership Manager, executives). No public access.
 No roles or permissions in v1 — everyone sees the same thing.
 
-Internal does not mean unprotected: see §9.10.
+No login. Nothing is protected until a Run can spend money — see §9.10.
 
 ---
 
@@ -59,7 +59,7 @@ enrich venue via Places  →  district, phone, website
 download CSV
 ```
 
-One page. No login in v1, but the deployment is access-protected (§9.10).
+One page. No login (§9.10).
 No stored pipeline. The output is a spreadsheet the team works from directly.
 
 **District is not a query dimension.** It is a column on the result, produced by
@@ -104,7 +104,7 @@ quality is settled enough for a score to mean anything.
 | Enrichment | Google Places Text Search + Place Details | Only external key the project needs |
 | Cache | **None in v1**; Redis via Vercel Marketplace when Places lands | Vercel KV is sunset; serverless has no writable disk, so a cache means an add-on — do not add one before it earns its keep (§9.13) |
 | Output | CSV, UTF-8 **with BOM** | Opens in Excel; BOM is required or Thai text corrupts |
-| Access | Vercel Authentication, scope **All Deployments** | Keeps an internal tool internal without building auth (§9.10) |
+| Access | **None until milestone 7**, then a shared password | Nothing to protect until a Run spends money (§9.10) |
 | Deploy | Vercel, `lemind` | CLI already authenticated |
 
 **Not Fastify.** It is a long-running server; Vercel runs serverless functions.
@@ -413,20 +413,21 @@ No scoring model, no candidate ranking, no fuzzy geo. At ~29 venues a week a
 human can eyeball every `unmatched` row. If the miss rate is annoying, tune the
 threshold — do not add machinery.
 
-### 9.10 Access control
+### 9.10 Access control — cost control, and not before
 
-`3–5 staff` + `no login` + `a button that spends a Google API key` is not an
-internal tool, it is an open endpoint. The risk is not secrecy; it is that
-anyone holding the URL can spend the key and burn the source's tolerance for the
-Vercel IP (§9.5).
+**No login at the delivery point.** Until Places is wired in, a Run fetches one
+public Meetup listing page that anyone could open directly in a browser. It
+spends nothing, writes nothing and exposes nothing. There is no asset to
+protect, and a login would only stand between Sunny and the thing we want
+feedback on.
 
-v1 uses **Vercel Authentication** with scope **All Deployments** — not just
-preview deployments, which is the default that leaves production open. No auth
-system and no user table; access is whoever is in the Vercel team.
+**Protection arrives with the key, in milestone 7.** At that moment the trigger
+changes from privacy to spend: anyone holding the URL can run up a Google bill
+and burn the source's tolerance for the Vercel IP (§9.5). One shared password
+(Vercel Password Protection) is enough — no accounts for anyone to create.
 
-Stated as the exact configuration so the person deploying does not have to
-guess. Confirm on deploy that the scope covers production on the current plan.
-An unlisted URL alone is not sufficient.
+If password protection is unavailable on the current plan, cap the spend
+instead: a per-run venue-lookup limit plus a Google Cloud budget alert.
 
 ### 9.11 Source failure is a contract, not an implementation detail
 
@@ -492,8 +493,8 @@ and is not an option for a new project.
    of scope for v1. Ask in parallel; do not wait on it.
 2. Who provisions and pays for the Google Cloud project and Places key?
 3. Confirm the three cities: Chiang Mai, Bangkok, Phuket.
-4. Is Vercel Authentication acceptable — i.e. is everyone who needs access in
-   the Vercel team — or is a shared password preferred? (§9.10)
+4. Who holds the shared password once milestone 7 lands, and where is it
+   kept? (§9.10)
 
 ---
 
@@ -506,17 +507,17 @@ and is not an option for a new project.
 | 3 | Normalize, filter, local-time rendering (§7.1) | no |
 | 4 | Page: city, date range, Run button | no |
 | 5 | CSV endpoint with BOM | no |
-| 6 | **Deploy + Vercel Authentication (§9.10) — ship to Sunny here** | no |
-| 7 | Places venue matching (§9.9) **+ venue cache (§9.13)** | **yes** |
+| 6 | **Deploy public, no login — ship to Sunny here** (§9.10) | no |
+| 7 | Places venue matching (§9.9) **+ venue cache (§9.13) + password (§9.10)** | **yes** |
 | 8 | Query cache — only if someone asks (§9.13) | no |
 
 Milestone 1 gates the rest of the design.
 
 **Milestone 6 is the delivery point, not a checkpoint.** Milestones 2–6 produce
-a deployed, protected, working site with **no external keys at all** — district,
-phone and website are simply empty columns. That is a usable weekly lead list
-and it should go to Sunny before milestone 7 starts, so the first feedback
-arrives while Places is still a decision rather than a dependency.
+a deployed, working site with **no external keys and no login at all** —
+district, phone and website are simply empty columns. That is a usable weekly
+lead list and it should go to Sunny before milestone 7 starts, so the first
+feedback arrives while Places is still a decision rather than a dependency.
 
 Milestone 7 ships the Places call and its venue cache together. Splitting them
 means paying for the same venues on every run (§9.13).
@@ -557,7 +558,7 @@ and its `__SERVER_DATA__` parser. Everything else transfers as-is.
 | 5 | `organizerUrl` added | On 12/12 measured events, free, and the only contact path to the organizer lead |
 | 6 | Organizer is the grouping key; no `partners.csv` | §7.2 — venues are 29 unique / 30 events; organizers repeat up to 3× |
 | 7 | Venue match confidence rule + `venueMatch` field | §9.9 — a wrong phone is worse than a missing one |
-| 8 | Deployment Protection added | §9.10 — an open Run button spends the Places key |
+| 8 | Protection added, tied to the Places key | §9.10 — an open Run button spends the key |
 | 9 | Per-source degradation promoted to a contract | §9.11 — already in the prototype, undocumented |
 | 10 | "keeps Places free" → "minimizes billable lookups" | §9.12 — the old wording was wrong |
 | 11 | `rating` cut from enrichment and CSV | §6.4 — not a BD decision input, higher field tier |
@@ -565,7 +566,7 @@ and its `__SERVER_DATA__` parser. Everything else transfers as-is.
 | 13 | "74 provinces" labeled as inference | §9.1 — three cities measured, the rest inferred; conclusion kept |
 | 14 | Vercel test hardened to content + repetition | §9.5 — one 200 does not disprove intermittent filtering |
 | 15 | Partner definition marked non-blocking | §10.1 — it changes ranking, not milestones 1–6 |
-| 16 | Deploy moved earlier (milestone 6 of 8) | The keyless build should be live and protected before Places is added |
+| 16 | Deploy moved earlier (milestone 6 of 8) | The keyless build should be live and in use before Places is added |
 
 ### v0.2 → v0.2.1
 
@@ -573,7 +574,7 @@ and its `__SERVER_DATA__` parser. Everything else transfers as-is.
 |---|---|---|
 | 17 | Vercel KV replaced by Redis via Vercel Marketplace | KV is sunset; not available to a new project |
 | 18 | **No cache in v1**; venue cache moved into milestone 7 | §9.13 — a query cache buys nothing at 2–4s and 5 users, but shipping Places without a venue cache re-bills every venue every run |
-| 19 | Access named exactly: Vercel Authentication, All Deployments | §9.10 — "one setting" left the production-vs-preview scope ambiguous for the deployer |
+| 19 | Access deferred to milestone 7 as a shared password | §9.10 — until a Run can spend money there is nothing to protect, and a login only delays the feedback |
 | 20 | Venue matcher pinned as deliberately dumb | §9.9 — the rule invited an entity resolver; the algorithm is now spelled out |
 | 21 | `startPrecision` kept, rationale added | §7.1 — a single-member union is a free compile-time guard, not dead code |
 | 22 | Milestone 6 named as the delivery point | §11 — ship the keyless version to Sunny before Places starts |
