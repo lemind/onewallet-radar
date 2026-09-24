@@ -10,7 +10,7 @@ function isoDate(d: Date): string {
 }
 
 const TODAY = isoDate(new Date());
-const DEFAULT_TO = isoDate(new Date(Date.now() + 90 * 864e5));
+const DEFAULT_TO = isoDate(new Date(Date.now() + 7 * 864e5));
 
 export default function Page() {
   const [city, setCity] = useState(CITIES[0].id);
