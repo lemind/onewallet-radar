@@ -280,7 +280,7 @@ the URL cannot trigger a billable run.
 - **Results are fetched fresh on each run.** Volume is low and a run takes
   seconds, so no stored result set is kept in v1. Only identified venues are
   remembered, to avoid paying twice for the same lookup.
-- **Access is by team membership** rather than a per-user account for this tool.
+- **No login at the delivery point.** Protection arrives with the Places key as a shared password, because that is when a Run starts costing money (`SPEC.md` §9.10).
 - **English-only interface.** The team works in English; Thai text from sources
   is preserved but the interface is not translated.
 - **One shared view.** No per-user roles, permissions or saved state — everyone

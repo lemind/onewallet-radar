@@ -152,20 +152,28 @@ necessary the moment outreach notes and stages exist, which is out of scope.
 
 ---
 
-## D7. Access: Vercel Authentication, scope All Deployments
+## D7. Access: none at delivery, a shared password once Places lands
 
-**Decision**: Protect the deployment through Vercel Authentication with the
-scope set to **All Deployments**, not the preview-only default.
+**Decision**: Ship milestone 6 with **no login at all**. Add Vercel Password
+Protection in milestone 7, in the same change as the API key.
 
-**Rationale**: "3–5 staff" + "no login" + "a button that spends a Google API
-key" describes an open endpoint, not an internal tool. The exposure is not
-privacy — it is that anyone holding the URL can spend the key and burn Meetup's
-tolerance for the Vercel IP. Team membership is the access list; no user table
-and no auth code are needed. The default scope covers preview deployments only
-and would leave production open, which is why the scope is named explicitly.
+**Rationale**: the trigger is spend, not privacy. Before Places, a Run fetches
+one public Meetup listing page that anyone could open in a browser — it spends
+nothing and writes nothing, so there is no asset to protect and a login only
+stands between Sunny and the feedback we want. The moment a key exists, anyone
+holding the URL can run up a Google bill and burn Meetup's tolerance for the
+Vercel IP, and that is when protection earns its place.
 
-**Rejected**: an unlisted URL alone (not a control); a shared password in an env
-var (more code, weaker, and something to leak).
+A shared password beats team-account auth here because Sunny and the BD staff
+are not in the Vercel team and should not have to be added to it to open a
+spreadsheet tool.
+
+**Rejected**: Vercel Authentication (would require adding BD staff to the Vercel
+team); any login before milestone 7 (protects nothing, delays feedback); relying
+on an unlisted URL after the key lands (not a control).
+
+**Fallback** if password protection is unavailable on the plan: cap spend
+instead — a per-run venue-lookup limit plus a Google Cloud budget alert.
 
 ---
 
