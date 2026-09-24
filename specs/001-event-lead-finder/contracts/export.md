@@ -1,46 +1,25 @@
-# Contract: `GET /api/export.csv`
+# Contract: CSV export
 
-**Date**: 2026-09-24 | **Plan**: [../plan.md](../plan.md)
+**Date**: 2026-09-24 (revised) | **Plan**: [../plan.md](../plan.md)
 
-Same pipeline and same parameters as [`/api/run`](./run.md), rendered as a
-spreadsheet file instead of JSON.
+**There is no export endpoint.** The CSV is built **in the browser** from the
+`RunResult` already held in page state, and saved via a Blob URL.
 
----
+That is deliberate: a second endpoint would re-run the whole scrape just to
+produce a file the page already has the data for — doubling the load on Meetup
+and risking a download that disagrees with the table above it.
 
-## Request
-
-```
-GET /api/export.csv?city=chiang-mai&from=2026-09-24&to=2026-10-01
-```
-
-Parameters and validation are identical to `/api/run`.
+`src/lib/csv.ts` must therefore stay browser-safe: no `Buffer`, no `fs`, and the
+BOM prepended as the string `"﻿"` rather than a byte sequence.
 
 ---
 
-## Response — 200
+## Columns
+
+Fixed order, one row per event, sorted by start ascending. **Eight columns**:
 
 ```
-Content-Type:        text/csv; charset=utf-8
-Content-Disposition: attachment; filename="onewallet-chiang-mai-2026-09-24.csv"
-```
-
-### Encoding — UTF-8 **with BOM**
-
-The response body **must** begin with the byte-order mark `EF BB BF`.
-
-This is not optional and not cosmetic. Without it, Excel on Windows interprets
-the file as the system code page and every Thai venue name becomes mojibake —
-which is most of the venue names in this dataset. FR-017 exists for this single
-byte sequence. Verify it with a real Excel open, not a text editor, because
-editors guess encodings well and Excel does not.
-
-### Columns
-
-Fixed order, one row per event, sorted by start ascending:
-
-```
-name, start_local, organizer, organizer_url, venue, district,
-address, phone, website, source, url
+name, start_local, organizer, organizer_url, venue, address, source, url
 ```
 
 | Column | Source | Empty when |
@@ -50,42 +29,47 @@ address, phone, website, source, url
 | `organizer` | `event.organizer` | the source published none |
 | `organizer_url` | `event.organizerUrl` | the source published none |
 | `venue` | `event.venue` | address-only event |
-| `district` | `event.district` | `venueMatch !== "matched"` |
 | `address` | `event.address` | venue-name-only event |
-| `phone` | `event.phone` | `venueMatch !== "matched"` |
-| `website` | `event.website` | `venueMatch !== "matched"` |
 | `source` | `"meetup"` | never |
 | `url` | `event.url` | never |
 
-**No UTC column.** `startUtc` is stored, never exported — exporting both invites
-someone to read the wrong one. **No rating column**; it is not a BD decision
-input and sits in a costlier field tier.
+**No UTC column.** `startUtc` is stored and used for sorting, never exported —
+exporting both invites someone to read the wrong one.
 
-### Formatting
+**No `district`, `phone`, `website` or `rating` columns.** District was cut along
+with the district filter it existed to serve. When Places enrichment lands
+(Phase 6) it adds **`phone`** and a Places-verified **`address`**; district and
+rating stay cut.
+
+## Encoding — UTF-8 **with BOM**
+
+The string must begin with `﻿`.
+
+Not optional, not cosmetic: without it Excel on Windows reads the file as the
+system code page and every Thai venue name becomes mojibake — and most venue
+names in this dataset are Thai. Verify with a real Excel open, not a text
+editor, because editors guess encodings well and Excel does not.
+
+## Formatting
 
 | Rule | Detail |
 |---|---|
-| `start_local` | `YYYY-MM-DD HH:MM` — a space, not a `T`, and no offset suffix. Spreadsheets parse it as a datetime and humans read it without decoding. |
-| Date-only precision | Date rendered, time cell **empty**. Never `00:00`. |
-| Null | Empty cell. Never `null`, `N/A` or `-`. |
-| Quoting | Wrap any field containing a comma, quote or newline in double quotes; escape inner quotes by doubling. Thai addresses contain commas routinely. |
-| Line ending | `\r\n`, for Excel. |
-| Header | Always present, even when there are no rows. |
+| `start_local` | `YYYY-MM-DD HH:MM` in `Asia/Bangkok` — a space, not a `T`, and no offset suffix |
+| Null | Empty cell. Never `null`, `N/A` or `-` |
+| Quoting | Wrap any field containing a comma, quote, CR or LF in double quotes; escape inner quotes by doubling. Thai addresses contain commas routinely |
+| Line ending | `\r\n`, for Excel |
+| Header | Always present, even with zero rows |
 
-### Zero rows
+## Filename
 
-A 200 with the header row and nothing after it. Downloading an empty sheet is a
-clearer answer than an error for "nothing on this week", and it matches what
-`/api/run` reports.
+`onewallet-<city>-<from>.csv`, e.g. `onewallet-chiang-mai-2026-09-24.csv`.
 
----
+## Zero rows
 
-## Response — 400 / 502
+Header row and nothing after it. The page does not offer the download button
+when there are no events, so this is reachable only programmatically.
 
-Same conditions as [`/api/run`](./run.md). Errors return **JSON, not CSV** —
-`Content-Type: application/json` — so the browser never saves a file containing
-an error message that a user might later read as data.
+## Verified by
 
-Enrichment failure is **not** an error here: the file downloads with empty
-district, phone and website columns, consistent with FR-019. The warning belongs
-on the page, next to the download button, since a CSV has nowhere to put one.
+`tests/parse.test.ts` — BOM present, Thai round-trips, commas quoted, inner
+quotes doubled, CRLF present, header emitted with no rows.

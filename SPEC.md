@@ -464,7 +464,7 @@ The two caches are not the same decision, and the difference matters:
 
 | Cache | Purpose | When | Key | TTL |
 |---|---|---|---|---|
-| **Venue enrichment** | **cost control** — every miss is a billable Places call | **with milestone 7, not after** | Places `place_id` | 7d |
+| **Venue enrichment** | **cost control** — every miss is a billable Places call | **with milestone 7, not after** | `{city}:{normalized venue name}` — not `place_id`, which is unknown until after the lookup | 7d |
 | Failed enrichment | stops a transient miss re-billing on every run | with milestone 7 | normalized venue name + city | 1h |
 | Query result | speed only | later, if anyone asks | `city + from + to + parserVersion` | 6h |
 

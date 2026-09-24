@@ -47,15 +47,10 @@ failed and when zero events matched**.
       "name": "New In Town Meetup: Welcome to Chiang Mai!",
       "url": "https://www.meetup.com/.../events/316427571/",
       "startUtc": "2026-09-24T11:00:00.000Z",
-      "startLocal": "2026-09-24T18:00:00+07:00",
-      "startPrecision": "datetime",
+      "startLocal": "2026-09-24 18:00",
       "end": null,
       "venue": "Spice Garden",
       "address": "17 Moonmuang Rd Lane 5, Tambon Si Phum, Chiang Mai 50200",
-      "district": "Mueang Chiang Mai",
-      "phone": "+66 53 123 456",
-      "website": "https://example.com",
-      "venueMatch": "matched",
       "organizer": "Beyond Small Talk, Chiang Mai",
       "organizerUrl": "https://www.meetup.com/beyond-small-talk-chiang-mai/"
     }
@@ -72,10 +67,11 @@ failed and when zero events matched**.
 1. `events` is sorted by `startUtc` ascending.
 2. Every event has a non-empty `url`.
 3. Every event has a `venue` or an `address`.
-4. `venueMatch !== "matched"` ⟹ `district`, `phone`, `website` are all `null`.
-5. `startLocal` is `startUtc` rendered in `Asia/Bangkok`.
-6. Before Phase 7, every row is `"not_attempted"` with null enrichment — a valid
-   and complete response, not a degraded one.
+4. `startLocal` is `startUtc` rendered in `Asia/Bangkok`, as `YYYY-MM-DD HH:MM`.
+5. Before Phase 6 there are no enrichment fields at all — that is a valid and
+   complete response, not a degraded one. Phase 6 adds `phone` and `venueMatch`,
+   and the all-or-nothing rule then applies: `venueMatch !== "matched"` implies
+   `phone` is null.
 
 ---
 

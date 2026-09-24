@@ -57,33 +57,31 @@ descriptions are large and carry nothing a BD user needs.
 ### `Event` — one row of output
 
 ```ts
-type VenueMatch = "matched" | "unmatched" | "not_attempted";
-
+// As shipped in src/types.ts. Places fields arrive in Phase 6, not before.
 type Event = {
   source: "meetup";
 
   name: string;
   url: string;                    // always present; the traceability guarantee
 
-  // Time — see "Time handling" below
-  startUtc: string;               // ISO 8601 UTC, exactly as published
-  startLocal: string;             // Asia/Bangkok, what humans read
-  startPrecision: "datetime";     // single-member union on purpose
-  end: string | null;             // "" from source normalizes to null
+  startUtc: string;               // ISO 8601 UTC, exactly as published; never exported
+  startLocal: string;             // "YYYY-MM-DD HH:MM" in Asia/Bangkok — what humans read
+  end: string | null;
 
   // Lead 1 — venue (merchant prospect)
   venue: string | null;
   address: string | null;
-  district: string | null;        // Places only
-  phone: string | null;           // Places only
-  website: string | null;         // Places only
-  venueMatch: VenueMatch;
 
   // Lead 2 — organizer (referral channel)
   organizer: string | null;
-  organizerUrl: string | null;
+  organizerUrl: string | null;    // present on 12/12 measured Meetup events
 };
 ```
+
+**Phase 6 adds `phone: string | null` and a `venueMatch: "matched" | "unmatched"
+| "not_attempted"` flag**, and nothing else. `district`, `website`, `rating` and
+`startPrecision` were all cut — district with the filter it existed to serve,
+`startPrecision` with Eventbrite, the only date-only source.
 
 **Invariants**
 
@@ -149,7 +147,9 @@ which is one more reason a 77-province selector is not a small change.
 
 ```ts
 type CachedVenue = {
-  placeId: string;                // cache key
+  // Key is `{city}:{normalizedVenueName}` — NOT placeId, which is only known
+  // after the billable lookup this cache exists to avoid.
+  placeId: string;
   district: string | null;
   phone: string | null;
   website: string | null;
@@ -194,9 +194,18 @@ Applied in order. Each drop increments its counter.
 | 4 | start outside `[now − 12h, to]` | `outOfRange` |
 | 5 | `(source, url)` already seen | `duplicate` |
 
-Measured on Chiang Mai, 24 Sep: 18 online, 0 no-venue, 0 no-date, 3 out-of-range,
-3 duplicate → 12 kept from 36 raw. **The port must reproduce these numbers
-against the saved fixture**; that is the acceptance test for Phase 3.
+**Do not assert the prototype's original counts.** They were measured across two
+sources (Meetup + Eventbrite) before Eventbrite was deferred, so they cannot be
+reproduced from the committed single-source fixture, which holds 12 records with
+12 distinct URLs.
+
+The acceptance test instead asserts the invariant, against a **fixed injected
+`now`** so it does not drift daily: every raw record is either kept or counted in
+exactly one `dropped` bucket, and `kept + sum(dropped) === raw`. See
+`tests/parse.test.ts`.
+
+A live run on 24 Sep for reference, not as an assertion: Chiang Mai 10 kept / 2
+online, Bangkok 9 / 3, Phuket 4 / 4 + 2 no-venue.
 
 ---
 

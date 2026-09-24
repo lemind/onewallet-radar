@@ -125,7 +125,7 @@ src/
 tests/
 ├── fixtures/
 │   ├── meetup-chiang-mai.html   # Saved 24 Sep, from the prototype run
-│   └── expected-chiang-mai.json # Prototype output, the port must reproduce it
+│                                 (prototype output lives at prototype/chiang-mai.expected.json)
 ├── meetup.test.ts               # Parser against fixtures
 ├── normalize.test.ts            # Filter rules, dedupe, range boundaries
 ├── time.test.ts                 # Timezone rendering, date-only handling
