@@ -36,7 +36,7 @@ These are shared by every user story and must complete before Phase 3.
 
 - [ ] T006 [P] Define `Event`, `RunResult`, `DroppedCounts`, `SourceError`, `VenueMatch` and `CityId` in `src/types.ts`, matching [data-model.md](./data-model.md) exactly
 - [ ] T007 [P] Define the three supported cities with their Meetup slugs (`th--Chiang-Mai`, `th--Bangkok`, `th--Phuket`) in `src/lib/cities.ts`
-- [ ] T008 [P] Copy the prototype's saved Meetup HTML to `tests/fixtures/meetup-chiang-mai.html` and its normalized output to `tests/fixtures/expected-chiang-mai.json`, both from the 24 Sep run in the prototype scratchpad
+- [x] T008 [P] Commit the 24 Sep prototype run into the repo — `tests/fixtures/meetup-chiang-mai.html` (the raw listing the tests parse), `prototype/scrape.py` (the proven parser T011 and T014 port) and `prototype/chiang-mai.expected.json` (its output, the baseline the port must reproduce)
 - [ ] T009 Implement `src/lib/time.ts` — parse a published instant into `startUtc`, derive `startLocal` in `Asia/Bangkok` via a named zone, and carry `startPrecision`
 - [ ] T010 Write `tests/time.test.ts` asserting `2026-09-24T11:00:00.000Z` renders as `2026-09-24 18:00`, that a date-only input yields an empty time cell rather than `00:00`, and that `startUtc` is never mutated
 

@@ -1,0 +1,148 @@
+{
+  "city": "chiang-mai",
+  "scraped_at": "2026-09-24T09:06:50.950479+00:00",
+  "window_days": 7,
+  "count": 12,
+  "dropped": {
+    "online": 18,
+    "no_venue": 0,
+    "no_date": 0,
+    "out_of_range": 3,
+    "dupe": 3
+  },
+  "errors": [],
+  "events": [
+    {
+      "source": "meetup",
+      "name": "❤️ SPEED DATING CHIANG MAI — BEYOND SMALL TALK",
+      "start": "2026-09-24T11:00:00+00:00",
+      "end": "",
+      "venue": "Spice Garden",
+      "address": "17 Moonmuang Rd Lane 5 Old City Tambon Si Phum, Amphoe Mueang Chiang Mai, Chang Wat Chiang Mai 50200, Thailand, Amphoe Mueang Chiang Mai, Amphoe Mueang Chiang Mai",
+      "organizer": "Beyond Small Talk, Chiang Mai",
+      "url": "https://www.meetup.com/beyond-small-talk-chiang-mai/events/316427571/",
+      "online": false
+    },
+    {
+      "source": "meetup",
+      "name": "New In Town Meetup: Welcome to Chiang Mai!",
+      "start": "2026-09-24T11:00:00+00:00",
+      "end": "",
+      "venue": "SHINE ON – Social Bar & Restaurant",
+      "address": "12 Huay Kaew Rd,, Chiang Mai, Chiang Mai",
+      "organizer": "Make New Friends in Chiang Mai",
+      "url": "https://www.meetup.com/makenewfriendsinchiangmai/events/316415704/",
+      "online": false
+    },
+    {
+      "source": "meetup",
+      "name": "Expat Karaoke Thursdays @ Extend Bar",
+      "start": "2026-09-24T13:30:00+00:00",
+      "end": "",
+      "venue": "The Extend Bar",
+      "address": "1, 1-2 Ratvithi Rd Old City Tambon Si Phum, Amphoe Mueang Chiang Mai, Chang Wat Chiang Mai 50200, Thailand, Tambon Si Phum, Tambon Si Phum",
+      "organizer": "Chiang Mai Professionals, Expats, and Digital Nomads",
+      "url": "https://www.meetup.com/chiang-mai-professionals-expats-and-digital-nomads/events/316635109/",
+      "online": false
+    },
+    {
+      "source": "meetup",
+      "name": "Exclusive Dinner for Chiang Mai Longtermers & DTV Visa Holders",
+      "start": "2026-09-25T11:00:00+00:00",
+      "end": "",
+      "venue": "Salsa Kitchen Ruamchok",
+      "address": "207 หมู่​ 8 ถ. สม​โ​ภ​ช​เชียงใหม่​700 ปี San Phi Suea, Mueang Chiang Mai District, Chiang Mai 50300, Chiang Mai, Chiang Mai",
+      "organizer": "Chiang Mai Professionals, Expats, and Digital Nomads",
+      "url": "https://www.meetup.com/chiang-mai-professionals-expats-and-digital-nomads/events/316356180/",
+      "online": false
+    },
+    {
+      "source": "meetup",
+      "name": "🛋️ FRIDAY SOCIAL NIGHT @attika studio",
+      "start": "2026-09-25T12:00:00+00:00",
+      "end": "",
+      "venue": "attika studio Café & Workshop",
+      "address": "63 Tha Phae Road, Chang Moi Sub-district, Amphoe Mueang Chiang Mai, Chiang Mai 50100, Chiang Mai, Chiang Mai",
+      "organizer": "Attika Studio Chiangmai",
+      "url": "https://www.meetup.com/attika-studio-chiangmai/events/316238239/",
+      "online": false
+    },
+    {
+      "source": "eventbrite",
+      "name": "Dialogue Flow. The easiest way to start meaningful conversations.",
+      "start": "2026-09-26T00:00:00+00:00",
+      "end": "2026-09-26",
+      "venue": "360Art Center",
+      "address": "165 Soi Ban Rai 1 Mu 1, Tambon Nam Phrae, จ.เชียงใหม่, 50230",
+      "organizer": null,
+      "url": "https://www.eventbrite.com/e/dialogue-flow-the-easiest-way-to-start-meaningful-conversations-tickets-1994143687450",
+      "online": false
+    },
+    {
+      "source": "meetup",
+      "name": "🍽️ Saturday Social Dinner at Spice Garden",
+      "start": "2026-09-26T11:00:00+00:00",
+      "end": "",
+      "venue": "Spice Garden",
+      "address": "17 Moonmuang Rd Lane 5 Old City Tambon Si Phum, Amphoe Mueang Chiang Mai, Chang Wat Chiang Mai 50200, Thailand, Tambon Si Phum, Tambon Si Phum",
+      "organizer": "Beyond Small Talk, Chiang Mai",
+      "url": "https://www.meetup.com/beyond-small-talk-chiang-mai/events/316606421/",
+      "online": false
+    },
+    {
+      "source": "eventbrite",
+      "name": "Solo travellers: casual hangout in Chiang Mai (4pm)",
+      "start": "2026-09-27T00:00:00+00:00",
+      "end": "2026-09-27",
+      "venue": "Three Kings Monument",
+      "address": "Prapokklao Road, Tambon Si Phum, จ.เชียงใหม่, 50200",
+      "organizer": null,
+      "url": "https://www.eventbrite.co.uk/e/solo-travellers-casual-hangout-in-chiang-mai-4pm-tickets-1857764857699",
+      "online": false
+    },
+    {
+      "source": "meetup",
+      "name": "Skate X Create 🛼🎨✨",
+      "start": "2026-09-27T07:00:00+00:00",
+      "end": "",
+      "venue": "Chiang Mai Railway Station",
+      "address": "(parking), Chiang Mai, Chiang Mai",
+      "organizer": "Chiang Mai Professionals, Expats, and Digital Nomads",
+      "url": "https://www.meetup.com/chiang-mai-professionals-expats-and-digital-nomads/events/316239702/",
+      "online": false
+    },
+    {
+      "source": "meetup",
+      "name": "🌅 Sunday Sunset Walk & Connect at CMU",
+      "start": "2026-09-27T10:00:00+00:00",
+      "end": "",
+      "venue": "Chiang Mai",
+      "address": "Chiang Mai, Chiang Mai, Chiang Mai",
+      "organizer": "Beyond Small Talk, Chiang Mai",
+      "url": "https://www.meetup.com/beyond-small-talk-chiang-mai/events/316454663/",
+      "online": false
+    },
+    {
+      "source": "eventbrite",
+      "name": "AI for Women: Create, Learn & Connect - AI Goddesses Meetup Chiang Mai",
+      "start": "2026-09-28T00:00:00+00:00",
+      "end": "2026-09-28",
+      "venue": "4Seas Nimman Coliving Coworking Space",
+      "address": "20 Nimmanahaeminda Road, Tambon Su Thep, จ.เชียงใหม่, 50200",
+      "organizer": null,
+      "url": "https://www.eventbrite.sg/e/ai-for-women-create-learn-connect-ai-goddesses-meetup-chiang-mai-tickets-1989192534418",
+      "online": false
+    },
+    {
+      "source": "meetup",
+      "name": "Did We Kill The Family? (Free Chiang Mai Weds Night Discussion Group)",
+      "start": "2026-09-30T11:00:00+00:00",
+      "end": "",
+      "venue": "4Seas Nimman",
+      "address": "2 20 Nimmana Haeminda Rd Lane 15, Tambon Su Thep, เมือง Chiang Mai 50200, Thailand, Thailand",
+      "organizer": "Questions That Matter (Free Weekly Wed 6pm Meetup Group)",
+      "url": "https://www.meetup.com/questionsthatmatter/events/316638674/",
+      "online": false
+    }
+  ]
+}
