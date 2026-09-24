@@ -1,0 +1,102 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { extractEvents } from "../src/lib/meetup.ts";
+import { normalize, filterEvents } from "../src/lib/normalize.ts";
+import { parseStart, toLocal } from "../src/lib/time.ts";
+import { toCsv } from "../src/lib/csv.ts";
+
+const HTML = readFileSync(new URL("./fixtures/meetup-chiang-mai.html", import.meta.url), "utf8");
+const RAW = extractEvents(HTML);
+
+test("extracts every Event from the fixture", () => {
+  assert.equal(RAW.length, 12);
+});
+
+test("every event carries an organizer name and url", () => {
+  const norm = RAW.map(normalize);
+  assert.equal(norm.filter((n) => n.event.organizer).length, 12);
+  assert.equal(norm.filter((n) => n.event.organizerUrl).length, 12);
+});
+
+test("every event carries a source url", () => {
+  assert.ok(RAW.map(normalize).every((n) => n.event.url.startsWith("https://")));
+});
+
+test("a 6pm Chiang Mai event is not rendered as 11:00", () => {
+  const d = parseStart("2026-09-24T11:00:00.000Z")!;
+  assert.equal(toLocal(d), "2026-09-24 18:00");
+});
+
+test("a timestamp with no offset is read as Bangkok, not UTC", () => {
+  assert.equal(toLocal(parseStart("2026-09-26T19:00:00")!), "2026-09-26 19:00");
+});
+
+test("filter counts are stable against a fixed now", () => {
+  const now = new Date("2026-09-24T00:00:00+07:00");
+  const to = new Date("2026-10-01T23:59:59+07:00");
+  const { events, dropped } = filterEvents(RAW, { now, to });
+  const total = events.length + Object.values(dropped).reduce((a, b) => a + b, 0);
+  assert.equal(total, 12, "every raw record is either kept or counted");
+  assert.ok(events.length > 0, "the fixture week is not empty");
+});
+
+test("results come back in chronological order", () => {
+  const { events } = filterEvents(RAW, {
+    now: new Date("2026-09-24T00:00:00+07:00"),
+    to: new Date("2026-10-01T23:59:59+07:00"),
+  });
+  const times = events.map((e) => new Date(e.startUtc).getTime());
+  assert.deepEqual(times, [...times].sort((a, b) => a - b));
+});
+
+test("online events are dropped, not shown", () => {
+  const { dropped } = filterEvents(RAW, {
+    now: new Date("2020-01-01T00:00:00+07:00"),
+    to: new Date("2030-01-01T00:00:00+07:00"),
+  });
+  assert.ok(dropped.online >= 1);
+});
+
+test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
+  const csv = toCsv([
+    {
+      source: "meetup",
+      name: "งานเลี้ยง",
+      url: "https://x/1",
+      startUtc: "2026-09-24T11:00:00.000Z",
+      startLocal: "2026-09-24 18:00",
+      end: null,
+      venue: 'The "Edge"',
+      address: "17 Moonmuang Rd, Si Phum, Chiang Mai",
+      organizer: null,
+      organizerUrl: null,
+    },
+  ]);
+  assert.ok(csv.startsWith("﻿"), "BOM present or Excel mangles Thai");
+  assert.ok(csv.includes("งานเลี้ยง"));
+  assert.ok(csv.includes('"17 Moonmuang Rd, Si Phum, Chiang Mai"'), "commas quoted");
+  assert.ok(csv.includes('"The ""Edge"""'), "inner quotes doubled");
+  assert.ok(csv.includes("\r\n"));
+  assert.equal(csv.split("\r\n")[1].split(",").length > 0, true);
+});
+
+test("csv emits a header even with no rows", () => {
+  assert.ok(toCsv([]).includes("name,start_local,organizer"));
+});
+
+test("a non-string eventAttendanceMode does not throw", () => {
+  const hybrid = {
+    "@type": "Event",
+    name: "Hybrid",
+    url: "https://x/2",
+    startDate: "2026-09-25T10:00:00.000Z",
+    eventAttendanceMode: [
+      "https://schema.org/OfflineEventAttendanceMode",
+      "https://schema.org/OnlineEventAttendanceMode",
+    ],
+    location: { name: "Somewhere" },
+  };
+  assert.doesNotThrow(() => normalize(hybrid));
+  assert.equal(normalize(hybrid).online, true);
+});

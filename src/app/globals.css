@@ -1,0 +1,66 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fbfaf8;
+  --fg: #1a1a1a;
+  --muted: #6b6b6b;
+  --line: #e2e0dc;
+  --accent: #1f6feb;
+  --card: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17171a;
+    --fg: #ededed;
+    --muted: #9a9a9a;
+    --line: #2e2e33;
+    --accent: #6ba2ff;
+    --card: #1e1e22;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.wrap { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; }
+
+h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+
+form {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+  padding: 16px; background: var(--card);
+  border: 1px solid var(--line); border-radius: 10px; margin-bottom: 20px;
+}
+label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+select, input[type="date"] {
+  font: inherit; padding: 7px 9px; border-radius: 7px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--fg); min-width: 150px;
+}
+button {
+  font: inherit; font-weight: 600; padding: 8px 18px; border: 0; border-radius: 7px;
+  background: var(--accent); color: #fff; cursor: pointer;
+}
+button:disabled { opacity: 0.55; cursor: default; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+
+.bar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.count { color: var(--muted); font-size: 13px; }
+
+.note { padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--muted); }
+.note.bad { border-color: #d9534f66; color: #d9534f; }
+
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+a { color: var(--accent); }
