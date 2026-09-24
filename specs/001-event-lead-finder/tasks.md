@@ -1,5 +1,19 @@
 # Tasks: Event-Sourced Partner Lead Finder
 
+> **SCOPE CUT 2026-09-24 — one day left.**
+> MVP is: **pick city + dates → scrape Meetup → download a spreadsheet.** That is all.
+>
+> **Cut entirely:** cache (both kinds), Google Places enrichment, district/phone/website
+> columns, password protection, Redis, the query cache. No API key, no storage, no login.
+> Phase 6 below is kept only as a record of what was dropped — do not build it.
+>
+> **Also dropped:** "port, do not improve". `prototype/scrape.py` has four confirmed bugs
+> (brace matcher counts braces inside strings; non-string `eventAttendanceMode` crashes the
+> source; ISO strings sorted as text; naive timestamps stamped UTC). Write the TypeScript
+> fresh against `tests/fixtures/meetup-chiang-mai.html` and do not copy those.
+>
+> Build order: T001 → T011 → T014 → T009 → T020 → T018 → deploy. Everything else is optional.
+
 **Branch**: `001-event-lead-finder` | **Date**: 2026-09-24
 **Input**: [spec.md](./spec.md), [plan.md](./plan.md), [data-model.md](./data-model.md), [contracts/](./contracts/), [research.md](./research.md), [quickstart.md](./quickstart.md)
 
