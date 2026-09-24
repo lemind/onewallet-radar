@@ -34,3 +34,5 @@ Thumbs.db
 
 # NOTE: data/*.json is deliberately NOT ignored.
 # Scrape output is committed - it is the datastore and the offline demo seed.
+next-env.d.ts
+.vercel
