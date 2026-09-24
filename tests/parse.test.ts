@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { extractEvents } from "../src/lib/meetup.ts";
+import { extractEvents } from "../src/lib/ldjson.ts";
 import { normalize, filterEvents } from "../src/lib/normalize.ts";
 import { parseStart, toLocal } from "../src/lib/time.ts";
 import { toCsv } from "../src/lib/csv.ts";

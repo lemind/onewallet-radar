@@ -1,5 +1,5 @@
 import type { Event, DroppedCounts, Source } from "../types.ts";
-import type { RawEvent } from "./meetup.ts";
+import type { RawEvent } from "./ldjson.ts";
 import { parseStart, toLocal } from "./time.ts";
 
 function str(v: unknown): string | null {

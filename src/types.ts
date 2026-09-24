@@ -1,6 +1,6 @@
 export type CityId = "chiang-mai" | "bangkok" | "phuket";
 
-export type Source = "meetup" | "eventbrite";
+export type Source = "meetup" | "eventbrite" | "luma";
 
 export type Event = {
   source: Source;
