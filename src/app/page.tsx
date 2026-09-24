@@ -107,7 +107,7 @@ export default function Page() {
             <table>
               <thead>
                 <tr>
-                  <th>When</th><th>Event</th><th>Venue</th><th>Organizer</th><th>Source</th>
+                  <th>When</th><th>Event</th><th>Venue / address</th><th>Organizer</th><th>From</th><th>Link</th>
                 </tr>
               </thead>
               <tbody>
@@ -115,12 +115,16 @@ export default function Page() {
                   <tr key={`${ev.url}-${ev.startUtc}`}>
                     <td className="when">{ev.startLocal}</td>
                     <td>{ev.name}</td>
-                    <td>{ev.venue ?? ev.address ?? "—"}</td>
+                    <td>
+                      {ev.venue ?? "—"}
+                      {ev.address && <div className="addr">{ev.address}</div>}
+                    </td>
                     <td>
                       {ev.organizerUrl ? (
                         <a href={ev.organizerUrl} target="_blank" rel="noreferrer">{ev.organizer}</a>
                       ) : (ev.organizer ?? "—")}
                     </td>
+                    <td className="src">{ev.source}</td>
                     <td><a href={ev.url} target="_blank" rel="noreferrer">open</a></td>
                   </tr>
                 ))}

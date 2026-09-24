@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { findCity } from "../../../lib/cities.ts";
-import { fetchListing, extractEvents } from "../../../lib/meetup.ts";
+import * as meetup from "../../../lib/meetup.ts";
+import * as eventbrite from "../../../lib/eventbrite.ts";
 import { filterEvents } from "../../../lib/normalize.ts";
-import type { RunResult } from "../../../types.ts";
+import type { RawEvent } from "../../../lib/meetup.ts";
+import type { RunResult, SourceError, Source } from "../../../types.ts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -16,8 +18,8 @@ export async function GET(req: Request) {
   const city = findCity(cityId);
   if (!city) return NextResponse.json({ error: `unknown city: ${cityId}` }, { status: 400 });
 
-  const toDate = new Date(`${to}T23:59:59+07:00`);
   const fromDate = new Date(`${from}T00:00:00+07:00`);
+  const toDate = new Date(`${to}T23:59:59+07:00`);
   if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
     return NextResponse.json({ error: "from and to must be YYYY-MM-DD" }, { status: 400 });
   }
@@ -31,9 +33,44 @@ export async function GET(req: Request) {
 
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), 25_000);
+
+  // Both sources are fetched together, and one failing never discards the other.
+  const jobs: { source: Source; run: () => Promise<RawEvent[]> }[] = [
+    {
+      source: "meetup",
+      run: async () => meetup.extractEvents(await meetup.fetchListing(city.meetupSlug, ac.signal)),
+    },
+    {
+      source: "eventbrite",
+      run: async () =>
+        eventbrite.extractEvents(await eventbrite.fetchListing(city.eventbriteSlug, ac.signal)),
+    },
+  ];
+
   try {
-    const html = await fetchListing(city.meetupSlug, ac.signal);
-    const { events, dropped } = filterEvents(extractEvents(html), { now: lower, to: toDate });
+    const settled = await Promise.allSettled(jobs.map((j) => j.run()));
+    const raws: { raw: RawEvent; source: Source }[] = [];
+    const errors: SourceError[] = [];
+
+    settled.forEach((r, i) => {
+      const source = jobs[i].source;
+      if (r.status === "fulfilled") {
+        for (const raw of r.value) raws.push({ raw, source });
+      } else {
+        const message = r.reason instanceof Error ? r.reason.message : String(r.reason);
+        errors.push({ source, message });
+      }
+    });
+
+    // Only a total failure is fatal — there is nothing truthful to return.
+    if (errors.length === jobs.length) {
+      return NextResponse.json(
+        { error: "no source could be reached", events: [], errors },
+        { status: 502 },
+      );
+    }
+
+    const { events, dropped } = filterEvents(raws, { now: lower, to: toDate });
     const body: RunResult = {
       city: city.id,
       from,
@@ -41,16 +78,9 @@ export async function GET(req: Request) {
       fetchedAt: new Date().toISOString(),
       events,
       dropped,
-      errors: [],
+      errors,
     };
     return NextResponse.json(body);
-  } catch (err) {
-    // Meetup unreachable is the one case that fails the run — nothing truthful to return.
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json(
-      { error: "meetup unreachable", events: [], errors: [{ source: "meetup", message }] },
-      { status: 502 },
-    );
   } finally {
     clearTimeout(timer);
   }

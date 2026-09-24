@@ -66,6 +66,8 @@ th { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap
 tr:last-child td { border-bottom: 0; }
 td.when { white-space: nowrap; font-variant-numeric: tabular-nums; }
 a { color: var(--accent); }
+.addr { color: var(--muted); font-size: 12px; margin-top: 2px; max-width: 340px; }
+.src { color: var(--muted); font-size: 12px; text-transform: capitalize; }
 
 /* Phone: the brief requires laptop and phone, so the controls stack rather than squeeze. */
 @media (max-width: 480px) {

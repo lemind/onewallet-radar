@@ -1,13 +1,17 @@
 export type CityId = "chiang-mai" | "bangkok" | "phuket";
 
+export type Source = "meetup" | "eventbrite";
+
 export type Event = {
-  source: "meetup";
+  source: Source;
   name: string;
   url: string;
   /** ISO 8601 UTC, exactly as published. Never exported — see startLocal. */
   startUtc: string;
-  /** Asia/Bangkok, "YYYY-MM-DD HH:MM". The only time a human ever sees. */
+  /** Asia/Bangkok. "YYYY-MM-DD HH:MM", or just "YYYY-MM-DD" when the source published no time. */
   startLocal: string;
+  /** "date" when the source published a bare date — never invent a midnight. */
+  startPrecision: "date" | "datetime";
   end: string | null;
   venue: string | null;
   address: string | null;
@@ -23,7 +27,7 @@ export type DroppedCounts = {
   duplicate: number;
 };
 
-export type SourceError = { source: "meetup"; message: string };
+export type SourceError = { source: Source; message: string };
 
 export type RunResult = {
   city: CityId;

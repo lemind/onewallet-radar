@@ -1,4 +1,4 @@
-import type { Event, DroppedCounts } from "../types.ts";
+import type { Event, DroppedCounts, Source } from "../types.ts";
 import type { RawEvent } from "./meetup.ts";
 import { parseStart, toLocal } from "./time.ts";
 
@@ -33,19 +33,20 @@ function isOnline(v: unknown): boolean {
 
 export type Normalized = { event: Event; online: boolean; start: Date | null };
 
-export function normalize(raw: RawEvent): Normalized {
+export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized {
   const { venue, address } = flatAddress(raw.location);
   const org = first(raw.organizer as Record<string, unknown> | Record<string, unknown>[]);
-  const start = parseStart(raw.startDate);
+  const parsed = parseStart(raw.startDate);
   return {
     online: isOnline(raw.eventAttendanceMode),
-    start,
+    start: parsed ? parsed.at : null,
     event: {
-      source: "meetup",
+      source,
       name: str(raw.name) ?? "",
       url: str(raw.url) ?? "",
-      startUtc: start ? start.toISOString() : "",
-      startLocal: start ? toLocal(start) : "",
+      startUtc: parsed ? parsed.at.toISOString() : "",
+      startLocal: parsed ? toLocal(parsed.at, parsed.precision) : "",
+      startPrecision: parsed ? parsed.precision : "datetime",
       end: str(raw.endDate),
       venue,
       address,
@@ -62,20 +63,25 @@ export type FilterResult = { events: Event[]; dropped: DroppedCounts };
  * `now` is injected so tests are deterministic against a saved fixture.
  */
 export function filterEvents(
-  raws: RawEvent[],
+  raws: { raw: RawEvent; source: Source }[],
   opts: { now: Date; to: Date },
 ): FilterResult {
   const dropped: DroppedCounts = { online: 0, noVenue: 0, noDate: 0, outOfRange: 0, duplicate: 0 };
   const seen = new Set<string>();
   const kept: { e: Event; t: number }[] = [];
 
-  for (const raw of raws) {
-    const { event, online, start } = normalize(raw);
+  for (const { raw, source } of raws) {
+    const { event, online, start } = normalize(raw, source);
     if (online) { dropped.online++; continue; }
+    // A lead needs somewhere to go: keep anything with a venue name or an address.
     if (!event.venue && !event.address) { dropped.noVenue++; continue; }
     if (!start) { dropped.noDate++; continue; }
-    if (start < opts.now || start > opts.to) { dropped.outOfRange++; continue; }
-    // Include the instant: a recurring meetup reuses one url for every occurrence.
+    // A date-only event covers its whole day, so compare against its end of day
+    // or a same-day listing would be dropped the moment the clock passed midnight.
+    const upper = event.startPrecision === "date"
+      ? new Date(start.getTime() + 86_400_000 - 1)
+      : start;
+    if (upper < opts.now || start > opts.to) { dropped.outOfRange++; continue; }
     const key = `${event.source}|${event.url || event.name}|${event.startUtc}`;
     if (seen.has(key)) { dropped.duplicate++; continue; }
     seen.add(key);
