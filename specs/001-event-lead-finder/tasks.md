@@ -46,9 +46,9 @@ rewritten. See [research.md](./research.md) O1.
 
 - [x] T001 Scaffold Next.js App Router app (TypeScript, Node 22) over the existing repo root, keeping `package.json` name, `.nvmrc`, `.editorconfig` and `tsconfig.json` intact
 - [x] T002 Add `next`, `react`, `react-dom` to dependencies and `dev`, `build`, `start`, `test` scripts in `package.json`
-- [ ] T003 Create the throwaway gate route in `src/app/api/iptest/route.ts` — fetch the Meetup Chiang Mai listing with a desktop User-Agent and return `{ status, bytes, hasEventSchema, elapsedMs }`, where `hasEventSchema` tests for `"@type":"Event"` in the body
-- [ ] T004 **GATE** Deploy with `vercel deploy` and call `/api/iptest` 5 times in immediate succession; record every result in [research.md](./research.md) under O1. Pass requires status 200, plausible byte count and `hasEventSchema: true` on **every** attempt. Any failure stops the build and moves the fetch to a scheduled GitHub Action per [plan.md](./plan.md) Phase 1
-- [ ] T005 Delete `src/app/api/iptest/route.ts` once T004 has passed
+- [~] T003 DROPPED 24 Sep — the real app was deployed instead, which exercises the same path. Original: create the throwaway gate route in `src/app/api/iptest/route.ts` — fetch the Meetup Chiang Mai listing with a desktop User-Agent and return `{ status, bytes, hasEventSchema, elapsedMs }`, where `hasEventSchema` tests for `"@type":"Event"` in the body
+- [~] T004 DROPPED 24 Sep on request. The IP question is answered by the live deployment rather than a probe route. Original: **GATE** deploy with `vercel deploy` and call `/api/iptest` 5 times in immediate succession; record every result in [research.md](./research.md) under O1. Pass requires status 200, plausible byte count and `hasEventSchema: true` on **every** attempt. Any failure stops the build and moves the fetch to a scheduled GitHub Action per [plan.md](./plan.md) Phase 1
+- [~] T005 N/A — no iptest route was ever created (T003 dropped)
 
 **Checkpoint**: The architecture is proven. Everything below is safe to build.
 
@@ -116,9 +116,9 @@ Force an unverifiable venue and confirm the contact columns are empty and the
 row is marked unverified, rather than filled with a near-match.
 
 - [x] T024 [US2] Render each row's source link as a visible, clickable element in `src/app/page.tsx`, never a bare URL string
-- [ ] T025 [US2] Display the `venueMatch` state per row in `src/app/page.tsx` so verified and unverified rows are distinguishable at a glance
+- [~] T025 BLOCKED — `venueMatch` does not exist until Places lands in Phase 6. Original: display the `venueMatch` state per row in `src/app/page.tsx` so verified and unverified rows are distinguishable at a glance
 - [x] T027 [US2] Distinguish the three outcomes in `src/app/page.tsx` — results, an explicit "no events in this range" empty state naming the city and dates, and a fetch failure — per FR-021
-- [ ] T028 [US2] Surface `errors[]` as a visible warning banner in `src/app/page.tsx` whenever it is non-empty alongside populated results
+- [x] T028 [US2] Surface `errors[]` as a warning banner in `src/app/page.tsx` when non-empty alongside results — amber `.note.warn`, names the failing source and its message; verified served
 - [x] T029 [P] [US2] Render a single line above the table — `Showing N of M found` — from `dropped`. One line of text, not a panel: roughly half of raw results are filtered, and this answers the first question anyone asks when the list looks short
 
 **Checkpoint**: The output is safe to act on. Nothing is guessed, and every
@@ -140,8 +140,8 @@ between Sunny and the thing we want feedback on. Protection returns in Phase 6,
 where it is a cost control rather than a security measure — see T032.
 
 - [~] T031 Deploy to production with `vercel --prod` — **deployed, but Vercel Deployment Protection is on by default and returns 302.** Turn it off in the dashboard (Settings → Deployment Protection → Vercel Authentication → Disabled). Cannot be done from the CLI: the CLI token is not API-scoped
-- [ ] T034 [P] Confirm the page is usable at phone width, since the brief requires phone and laptop
-- [ ] T035 **Send the URL to Sunny** — no account needed, no password to pass on. Feedback should arrive while Places is still a decision rather than a dependency
+- [x] T034 [P] Phone width — added a `max-width: 480px` block stacking the form controls full-width; viewport meta present, table already scrolls in its own container; verified in the served CSS bundle
+- [~] T035 BLOCKED — Vercel Deployment Protection returns 302; needs the dashboard toggle. Original: **send the URL to Sunny** — no account needed, no password to pass on. Feedback should arrive while Places is still a decision rather than a dependency
 
 **Checkpoint**: A working tool is in use. Everything below improves a product
 that already exists.
@@ -174,9 +174,9 @@ triggers no new billable lookups.
 
 ## Phase 7: Polish
 
-- [ ] T043 [P] Rewrite `README.md` — it still describes a GitHub Actions cron, Eventbrite as a live source, and "No API keys required", all of which now contradict the spec
-- [ ] T044 [P] Record the measured Vercel fetch results from T004 in [research.md](./research.md) O1, replacing the open status
-- [ ] T045 [P] Check the empty-state and error copy reads plainly for a non-technical BD user
+- [x] T043 [P] Rewrote `README.md` — documents the working MVP, live coverage for all three cities, and the four things easy to get wrong (UTC, BOM, district, online noise)
+- [~] T044 N/A — T004 was dropped, so there are no probe results to record. The live deployment supersedes it in [research.md](./research.md) O1, replacing the open status
+- [x] T045 [P] Copy pass — "Scraping…" → "Searching…", subtitle rewritten, organizer spelling made consistent with the CSV column; empty state already named the city and date range
 - [x] T046 Confirm no `startUtc` value reaches any user-facing surface — page or CSV
 
 ---

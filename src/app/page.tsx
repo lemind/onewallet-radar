@@ -55,7 +55,7 @@ export default function Page() {
   return (
     <main className="wrap">
       <h1>onewallet radar</h1>
-      <p className="sub">Upcoming events and the businesses attached to them.</p>
+      <p className="sub">Upcoming events in Thai cities, and the venues and organizers behind them.</p>
 
       <form onSubmit={run}>
         <label>
@@ -74,10 +74,19 @@ export default function Page() {
           To
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
-        <button type="submit" disabled={busy}>{busy ? "Scraping…" : "Run"}</button>
+        <button type="submit" disabled={busy}>{busy ? "Searching…" : "Run"}</button>
       </form>
 
       {error && <p className="note bad">Could not reach Meetup — {error}</p>}
+
+      {result && result.errors.length > 0 && (
+        // Partial success: some data came back, some did not. Say which, rather than
+        // letting a thinner result look like a complete one.
+        <p className="note warn">
+          Some details are missing:{" "}
+          {result.errors.map((e) => `${e.source} — ${e.message}`).join("; ")}
+        </p>
+      )}
 
       {result && result.events.length === 0 && !error && (
         <p className="note">
