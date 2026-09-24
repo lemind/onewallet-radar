@@ -9,8 +9,10 @@ measured output, and saved HTML fixtures make that verifiable offline. No tests
 are written for the UI or for glue code.
 
 **Organization**: By user story, so each is independently implementable and
-testable. Stories are ordered by priority; **US4 ships before US3** because the
-tool is deliverable without enrichment but not without access control.
+testable. Stories are ordered by priority, with one deliberate exception:
+**US4 (protection) ships inside Phase 6 alongside US3**, not before it. Until a
+Run can spend money there is nothing to protect, and a login would only stand
+between Sunny and the thing we want feedback on. See T032.
 
 ---
 
@@ -169,7 +171,7 @@ Phase 3 (US1, P1)  ← MVP, delivers core value alone
    ▼
 Phase 4 (US2, P2)  ← depends on US1's page and pipeline
    ▼
-Phase 5 (US4, P2)  ← DELIVERY POINT, ship here
+Phase 5 (Ship it)  ← DELIVERY POINT, ship here — no key, no login
    ▼
 Phase 6 (US3, P3)  ← additive; needs the key
    ▼
@@ -177,9 +179,10 @@ Phase 7 (Polish)
 ```
 
 **Story independence**: US1 stands alone. US2 refines US1's output and page, so
-it follows rather than parallels it. US4 depends only on something being
-deployable — it could run any time after Phase 3. US3 is fully additive: remove
-it and every other story still works, with three columns empty.
+it follows rather than parallels it. US3 is fully additive: remove it and every
+other story still works, with three columns empty. US4 is not independent at
+all — it is triggered by US3, since protection becomes necessary at the moment a
+Run starts costing money and not before.
 
 ---
 
@@ -208,11 +211,12 @@ three.
 spreadsheet the team needs. If the hackathon clock runs out there, something
 real has still been built.
 
-**Ship at Phase 5, not at Phase 6.** The tool is deliverable without enrichment;
-it is not deliverable without access control, because an open Run button spends
-a key and burns the source's tolerance for the IP. Getting it in front of Sunny
-before Places starts means the first real feedback arrives while enrichment is
-still a choice.
+**Ship at Phase 5, not at Phase 6.** The tool is deliverable without enrichment,
+and at that point it is also deliverable without a login: a Run fetches one
+public listing page that anyone could open directly, so it spends nothing and
+writes nothing. Getting it to Sunny before Places starts means the first real
+feedback arrives while enrichment is still a choice. Protection arrives in
+Phase 6 with the key (T032), where it is cost control rather than security.
 
 **Phase 1 is a gate, not a warm-up.** T004 is the only task here that can
 invalidate the rest of the plan. Run it first, run it repeatedly, and believe

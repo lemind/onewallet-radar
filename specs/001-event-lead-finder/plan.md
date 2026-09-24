@@ -16,9 +16,10 @@ The approach is deliberately small: one Next.js app on Vercel, no database, no
 headless browser, no queue, no background jobs. Parsing logic is a port of a
 proven Python prototype rather than a fresh implementation.
 
-The plan is sequenced so that a **deployed, access-protected, useful tool exists
-before any paid API is involved**. Google Places is additive — until it lands,
-district, phone and website are simply empty columns.
+The plan is sequenced so that a **deployed, useful tool exists before any paid
+API is involved**. Google Places is additive — until it lands, district, phone
+and website are simply empty columns, and there is nothing to protect because a
+Run spends nothing.
 
 ## Technical Context
 
@@ -155,8 +156,11 @@ serves Vercel's datacenter IPs at all.**
 
 ## Phase 2 — Implementation Sequence
 
-Mapped from `SPEC.md` §11. Each phase is independently verifiable, and the
-tool is genuinely usable from Phase 5 onward.
+Mapped from `SPEC.md` §11, and numbered as its **milestones 1–8**. Note these
+are not the same numbers as the seven phases in [tasks.md](./tasks.md): milestone
+6 below is that document's Phase 5, and milestone 7 is its Phase 6. Each
+milestone is independently verifiable, and the tool is genuinely usable from
+milestone 6 onward.
 
 | Phase | Deliverable | Gate to pass | Key |
 |---|---|---|---|
@@ -166,7 +170,7 @@ tool is genuinely usable from Phase 5 onward.
 | 4 | `app/page.tsx` — city, date range, Run, results table | A person can run a search and read the result | no |
 | 5 | `/api/export.csv` — BOM, column order | Thai venue names open correctly in Excel | no |
 | 6 | **Deploy public and ship to Sunny — no login** | Anyone on the team opens the URL and runs a search with no sign-in | no |
-| 7 | `lib/places.ts` + `lib/cache.ts` — enrichment **with** its venue cache | Unverified venues carry no contact data; repeat runs re-bill nothing | **yes** |
+| 7 | `lib/places.ts` + `lib/cache.ts` — enrichment **with** its venue cache, behind password protection (T032) | Unverified venues carry no contact data; repeat runs re-bill nothing; a stranger cannot trigger a billable run | **yes** |
 | 8 | Query cache | Only if someone asks for it | no |
 
 **Phase 1 is a gate, not a task.** If Meetup blocks Vercel's IPs, the
@@ -174,14 +178,16 @@ architecture changes — the fetch moves to GitHub Actions on a schedule with
 committed JSON, and the app serves that instead. Nothing beyond Phase 1 should
 be written until it passes, and `/api/iptest` is deleted once it has.
 
-**Phase 5 is the delivery point.** Phases 2–5 produce a deployed, protected,
-working tool with no external keys. It should reach Sunny before Phase 7 begins,
-so the first real feedback arrives while Places is still a decision rather than
-a dependency.
+**Milestone 6 is the delivery point.** Milestones 2–6 produce a deployed,
+working tool with no external keys and no login — nothing is spent and nothing
+is written, so there is nothing to protect. It should reach Sunny before
+milestone 7 begins, so the first real feedback arrives while Places is still a
+decision rather than a dependency.
 
-**Phase 7 ships enrichment and its cache together.** Splitting them means
-re-paying for the same venues on every run, since venue repetition is low
-(29 unique across 30 events).
+**Milestone 7 ships enrichment, its cache and its protection together.**
+Splitting the cache off means re-paying for the same venues on every run, since
+venue repetition is low (29 unique across 30 events). Splitting the protection
+off leaves a public button spending a real key.
 
 ## Complexity Tracking
 
