@@ -36,8 +36,8 @@ between Sunny and the thing we want feedback on. See T032.
 Vercel's datacenter IPs, the architecture changes and most of this file is
 rewritten. See [research.md](./research.md) O1.
 
-- [ ] T001 Scaffold Next.js App Router app (TypeScript, Node 22) over the existing repo root, keeping `package.json` name, `.nvmrc`, `.editorconfig` and `tsconfig.json` intact
-- [ ] T002 Add `next`, `react`, `react-dom` to dependencies and `dev`, `build`, `start`, `test` scripts in `package.json`
+- [x] T001 Scaffold Next.js App Router app (TypeScript, Node 22) over the existing repo root, keeping `package.json` name, `.nvmrc`, `.editorconfig` and `tsconfig.json` intact
+- [x] T002 Add `next`, `react`, `react-dom` to dependencies and `dev`, `build`, `start`, `test` scripts in `package.json`
 - [ ] T003 Create the throwaway gate route in `src/app/api/iptest/route.ts` — fetch the Meetup Chiang Mai listing with a desktop User-Agent and return `{ status, bytes, hasEventSchema, elapsedMs }`, where `hasEventSchema` tests for `"@type":"Event"` in the body
 - [ ] T004 **GATE** Deploy with `vercel deploy` and call `/api/iptest` 5 times in immediate succession; record every result in [research.md](./research.md) under O1. Pass requires status 200, plausible byte count and `hasEventSchema: true` on **every** attempt. Any failure stops the build and moves the fetch to a scheduled GitHub Action per [plan.md](./plan.md) Phase 1
 - [ ] T005 Delete `src/app/api/iptest/route.ts` once T004 has passed
@@ -50,11 +50,11 @@ rewritten. See [research.md](./research.md) O1.
 
 These are shared by every user story and must complete before Phase 3.
 
-- [ ] T006 [P] Define `Event`, `RunResult`, `DroppedCounts`, `SourceError`, `VenueMatch` and `CityId` in `src/types.ts`, matching [data-model.md](./data-model.md) exactly
-- [ ] T007 [P] Define the three supported cities with their Meetup slugs (`th--Chiang-Mai`, `th--Bangkok`, `th--Phuket`) in `src/lib/cities.ts`
+- [x] T006 [P] Define `Event`, `RunResult`, `DroppedCounts`, `SourceError`, `VenueMatch` and `CityId` in `src/types.ts`, matching [data-model.md](./data-model.md) exactly
+- [x] T007 [P] Define the three supported cities with their Meetup slugs (`th--Chiang-Mai`, `th--Bangkok`, `th--Phuket`) in `src/lib/cities.ts`
 - [x] T008 [P] Commit the 24 Sep prototype run into the repo — `tests/fixtures/meetup-chiang-mai.html` (the raw listing the tests parse), `prototype/scrape.py` (the proven parser T011 and T014 port) and `prototype/chiang-mai.expected.json` (its output, the baseline the port must reproduce)
-- [ ] T009 Implement `src/lib/time.ts` — parse a published instant into `startUtc`, derive `startLocal` in `Asia/Bangkok` via a named zone, and carry `startPrecision`
-- [ ] T010 Write `tests/time.test.ts` asserting `2026-09-24T11:00:00.000Z` renders as `2026-09-24 18:00`, that a date-only input yields an empty time cell rather than `00:00`, and that `startUtc` is never mutated
+- [x] T009 Implement `src/lib/time.ts` — parse a published instant into `startUtc`, derive `startLocal` in `Asia/Bangkok` via a named zone, and carry `startPrecision`
+- [x] T010 Write `tests/time.test.ts` asserting `2026-09-24T11:00:00.000Z` renders as `2026-09-24 18:00`, that a date-only input yields an empty time cell rather than `00:00`, and that `startUtc` is never mutated
 
 **Checkpoint**: Types, cities and time handling exist and are tested.
 
@@ -71,27 +71,27 @@ row, readable in Excel with Thai characters intact.
 
 ### Parser — port, do not improve
 
-- [ ] T011 [US1] Implement `src/lib/meetup.ts` — fetch the city listing with a desktop User-Agent, handle gzip, extract `application/ld+json` blocks and keep records where `@type === "Event"`. A direct translation of the prototype; keep its structure
-- [ ] T012 [US1] Extract `organizer.name` **and** `organizer.url` in `src/lib/meetup.ts` — the prototype discards the URL, and it is the only contact path to the organizer lead
-- [ ] T013 [P] [US1] Write `tests/meetup.test.ts` against `tests/fixtures/meetup-chiang-mai.html` asserting 12 events parsed, 12 with an organizer name and 12 with an organizer URL
+- [x] T011 [US1] Implement `src/lib/meetup.ts` — fetch the city listing with a desktop User-Agent, handle gzip, extract `application/ld+json` blocks and keep records where `@type === "Event"`. A direct translation of the prototype; keep its structure
+- [x] T012 [US1] Extract `organizer.name` **and** `organizer.url` in `src/lib/meetup.ts` — the prototype discards the URL, and it is the only contact path to the organizer lead
+- [x] T013 [P] [US1] Write `tests/meetup.test.ts` against `tests/fixtures/meetup-chiang-mai.html` asserting 12 events parsed, 12 with an organizer name and 12 with an organizer URL
 
 ### Normalize and filter
 
-- [ ] T014 [US1] Implement `src/lib/normalize.ts` — flatten `location.address` into a single string, lift venue and organizer, normalize an empty-string `endDate` to `null`, and map each record to `Event` with `venueMatch: "not_attempted"`
-- [ ] T015 [US1] Implement the five filter rules and their counters in `src/lib/normalize.ts` per [data-model.md](./data-model.md) — online, no-venue, no-date, out-of-range, duplicate `(source, url)` — then sort by `startUtc` ascending
-- [ ] T016 [P] [US1] Write `tests/normalize.test.ts` against a **fixed injected `now`**, not wall-clock time, or the fixture's out-of-range count drifts every day. Re-derive the expected dropped counts from the fixture at that fixed instant; the prototype's 18 online / 0 no-venue / 0 no-date / 3 out-of-range / 3 duplicate was measured **with** the 12-hour grace that T015 no longer applies
+- [x] T014 [US1] Implement `src/lib/normalize.ts` — flatten `location.address` into a single string, lift venue and organizer, normalize an empty-string `endDate` to `null`, and map each record to `Event` with `venueMatch: "not_attempted"`
+- [x] T015 [US1] Implement the five filter rules and their counters in `src/lib/normalize.ts` per [data-model.md](./data-model.md) — online, no-venue, no-date, out-of-range, duplicate `(source, url)` — then sort by `startUtc` ascending
+- [x] T016 [P] [US1] Write `tests/normalize.test.ts` against a **fixed injected `now`**, not wall-clock time, or the fixture's out-of-range count drifts every day. Re-derive the expected dropped counts from the fixture at that fixed instant; the prototype's 18 online / 0 no-venue / 0 no-date / 3 out-of-range / 3 duplicate was measured **with** the 12-hour grace that T015 no longer applies
 
 ### Endpoint and page
 
-- [ ] T017 [US1] Implement `src/app/api/run/route.ts` per [contracts/run.md](./contracts/run.md) — validate `city`, `from` and `to`, return 400 on bad input, 502 when Meetup is unreachable, and a `RunResult` on success with a 25-second fetch timeout
-- [ ] T018 [US1] Build the single page in `src/app/page.tsx` — city select, date range inputs, Run button, and a results table showing name, local start, venue, organizer and source link
-- [ ] T019 [US1] Add a loading state to `src/app/page.tsx` so a 2–4 second fetch does not look like a dead button
+- [x] T017 [US1] Implement `src/app/api/run/route.ts` per [contracts/run.md](./contracts/run.md) — validate `city`, `from` and `to`, return 400 on bad input, 502 when Meetup is unreachable, and a `RunResult` on success with a 25-second fetch timeout
+- [x] T018 [US1] Build the single page in `src/app/page.tsx` — city select, date range inputs, Run button, and a results table showing name, local start, venue, organizer and source link
+- [x] T019 [US1] Add a loading state to `src/app/page.tsx` so a 2–4 second fetch does not look like a dead button
 
 ### CSV export
 
-- [ ] T020 [P] [US1] Implement `src/lib/csv.ts` per [contracts/export.md](./contracts/export.md) — UTF-8 BOM prefix, the fixed 11-column order, `YYYY-MM-DD HH:MM` start formatting, empty cells for nulls, `\r\n` line endings, and quote-escaping for fields containing commas or quotes
-- [ ] T021 [P] [US1] Write `tests/csv.test.ts` asserting the output begins with bytes `EF BB BF`, that a Thai venue name survives a round trip, that a comma-containing address is quoted, and that the header is emitted for an empty result set
-- [ ] T023 [US1] Wire a download button into `src/app/page.tsx` that builds the CSV **in the browser** from the `RunResult` already held in state and saves it via a Blob URL — no second request, no second scrape. `src/lib/csv.ts` must therefore stay browser-safe: no `Buffer`, no `fs`, and the UTF-8 BOM prepended as a `\uFEFF` string
+- [x] T020 [P] [US1] Implement `src/lib/csv.ts` per [contracts/export.md](./contracts/export.md) — UTF-8 BOM prefix, the fixed 11-column order, `YYYY-MM-DD HH:MM` start formatting, empty cells for nulls, `\r\n` line endings, and quote-escaping for fields containing commas or quotes
+- [x] T021 [P] [US1] Write `tests/csv.test.ts` asserting the output begins with bytes `EF BB BF`, that a Thai venue name survives a round trip, that a comma-containing address is quoted, and that the header is emitted for an empty result set
+- [x] T023 [US1] Wire a download button into `src/app/page.tsx` that builds the CSV **in the browser** from the `RunResult` already held in state and saves it via a Blob URL — no second request, no second scrape. `src/lib/csv.ts` must therefore stay browser-safe: no `Buffer`, no `fs`, and the UTF-8 BOM prepended as a `\uFEFF` string
 
 **Checkpoint**: The MVP works locally. A person can run a search and get a
 usable spreadsheet. This alone delivers the product's core value.
@@ -107,11 +107,11 @@ presented as fact.
 Force an unverifiable venue and confirm the contact columns are empty and the
 row is marked unverified, rather than filled with a near-match.
 
-- [ ] T024 [US2] Render each row's source link as a visible, clickable element in `src/app/page.tsx`, never a bare URL string
+- [x] T024 [US2] Render each row's source link as a visible, clickable element in `src/app/page.tsx`, never a bare URL string
 - [ ] T025 [US2] Display the `venueMatch` state per row in `src/app/page.tsx` so verified and unverified rows are distinguishable at a glance
-- [ ] T027 [US2] Distinguish the three outcomes in `src/app/page.tsx` — results, an explicit "no events in this range" empty state naming the city and dates, and a fetch failure — per FR-021
+- [x] T027 [US2] Distinguish the three outcomes in `src/app/page.tsx` — results, an explicit "no events in this range" empty state naming the city and dates, and a fetch failure — per FR-021
 - [ ] T028 [US2] Surface `errors[]` as a visible warning banner in `src/app/page.tsx` whenever it is non-empty alongside populated results
-- [ ] T029 [P] [US2] Render a single line above the table — `Showing N of M found` — from `dropped`. One line of text, not a panel: roughly half of raw results are filtered, and this answers the first question anyone asks when the list looks short
+- [x] T029 [P] [US2] Render a single line above the table — `Showing N of M found` — from `dropped`. One line of text, not a panel: roughly half of raw results are filtered, and this answers the first question anyone asks when the list looks short
 
 **Checkpoint**: The output is safe to act on. Nothing is guessed, and every
 claim is checkable.
@@ -131,7 +131,7 @@ written data, so there is nothing to protect and a login would only stand
 between Sunny and the thing we want feedback on. Protection returns in Phase 6,
 where it is a cost control rather than a security measure — see T032.
 
-- [ ] T031 Deploy to production with `vercel --prod` — public URL, unlisted, no deployment protection
+- [~] T031 Deploy to production with `vercel --prod` — **deployed, but Vercel Deployment Protection is on by default and returns 302.** Turn it off in the dashboard (Settings → Deployment Protection → Vercel Authentication → Disabled). Cannot be done from the CLI: the CLI token is not API-scoped
 - [ ] T034 [P] Confirm the page is usable at phone width, since the brief requires phone and laptop
 - [ ] T035 **Send the URL to Sunny** — no account needed, no password to pass on. Feedback should arrive while Places is still a decision rather than a dependency
 
@@ -169,7 +169,7 @@ triggers no new billable lookups.
 - [ ] T043 [P] Rewrite `README.md` — it still describes a GitHub Actions cron, Eventbrite as a live source, and "No API keys required", all of which now contradict the spec
 - [ ] T044 [P] Record the measured Vercel fetch results from T004 in [research.md](./research.md) O1, replacing the open status
 - [ ] T045 [P] Check the empty-state and error copy reads plainly for a non-technical BD user
-- [ ] T046 Confirm no `startUtc` value reaches any user-facing surface — page or CSV
+- [x] T046 Confirm no `startUtc` value reaches any user-facing surface — page or CSV
 
 ---
 
