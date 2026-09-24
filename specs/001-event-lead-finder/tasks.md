@@ -1,18 +1,26 @@
 # Tasks: Event-Sourced Partner Lead Finder
 
-> **SCOPE CUT 2026-09-24 — one day left.**
-> MVP is: **pick city + dates → scrape Meetup → download a spreadsheet.** That is all.
+> **STATUS 2026-09-24 — MVP is built, tested and deployed.**
+> Pick city + dates → scrape Meetup → download a spreadsheet. 23 tasks done.
+> Live-verified against all three cities: Chiang Mai 10, Bangkok 9, Phuket 4 events.
 >
-> **Cut entirely:** cache (both kinds), Google Places enrichment, district/phone/website
-> columns, password protection, Redis, the query cache. No API key, no storage, no login.
-> Phase 6 below is kept only as a record of what was dropped — do not build it.
+> **Remaining work, deploy-first.** Each step is shippable on its own — deploy after
+> every one and try it, rather than batching.
 >
-> **Also dropped:** "port, do not improve". `prototype/scrape.py` has four confirmed bugs
-> (brace matcher counts braces inside strings; non-string `eventAttendanceMode` crashes the
-> source; ISO strings sorted as text; naive timestamps stamped UTC). Write the TypeScript
-> fresh against `tests/fixtures/meetup-chiang-mai.html` and do not copy those.
+> | # | Do | Why now |
+> |---|---|---|
+> | 1 | Turn off Deployment Protection in the Vercel dashboard | Nothing can be tried until this is off; it is a toggle, not a task |
+> | 2 | Send the URL round, use it on real leads | The next decisions should come from a real run, not a guess |
+> | 3 | Places enrichment: **name, phone, address** (T036-T038, T040-T041) | The lead is only actionable with a phone number |
+> | 4 | Venue cache (T039) | Only once enrichment exists — it is what stops re-billing the same venues |
+> | 5 | Password protection (T032) | Only once a key exists — protects spend, not privacy |
+> | 6 | Copy and phone-width polish (T034, T045) | After someone has actually used it |
 >
-> Build order: T001 → T011 → T014 → T009 → T020 → T018 → deploy. Everything else is optional.
+> **Cut for good:** district column and district filtering, Google rating, query cache,
+> Redis for anything but the venue cache, login before step 5, Eventbrite.
+>
+> **Do not port `prototype/scrape.py`.** It has four confirmed bugs. The TypeScript was
+> written fresh against `tests/fixtures/meetup-chiang-mai.html` and fixes all four.
 
 **Branch**: `001-event-lead-finder` | **Date**: 2026-09-24
 **Input**: [spec.md](./spec.md), [plan.md](./plan.md), [data-model.md](./data-model.md), [contracts/](./contracts/), [research.md](./research.md), [quickstart.md](./quickstart.md)
@@ -150,7 +158,7 @@ triggers no new billable lookups.
 
 **This phase is the only one requiring a paid API key.**
 
-- [ ] T036 [US3] Implement `src/lib/places.ts` — Text Search with an explicit field mask limited to district, phone and website, then Place Details only where required. **No `rating` field**, per [research.md](./research.md) D4
+- [ ] T036 [US3] Implement `src/lib/places.ts` — Text Search with an explicit field mask limited to **name, phone and address**. No `rating`, no district: a phone number is what makes a lead actionable, and district was cut with the filter it existed for
 - [ ] T037 [US3] Implement the match confidence gate in `src/lib/places.ts` — candidate #1 only, normalize names by lowercasing and stripping punctuation and generic words, then accept **only** an exact match of the normalized strings with the returned address containing the requested city. Anything else is `unmatched`. No similarity score, no threshold, no fuzzy matcher — a wrong business is worse than a missing one
 - [ ] T038 [US3] Set `venueMatch` to `"matched"` or `"unmatched"` in `src/lib/places.ts`, attaching all three fields or none — never a partial fill
 - [ ] T026 [US3] Enforce the all-or-nothing invariant at the **enrichment boundary** in `src/lib/places.ts` — `venueMatch !== "matched"` must always produce null `district`, `phone` and `website`. It cannot live in `normalize.ts`: those fields do not exist until this phase

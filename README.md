@@ -3,55 +3,97 @@
 Finds upcoming events in Thai cities and the businesses attached to them — venues and
 organizers — as partner leads for One Wallet.
 
+Pick a city and a date range, press Run, download a spreadsheet.
+
 ## Why
 
-One Wallet's best partners come through events (nomad meetups, festivals, tech events).
-Today that research is manual, one city at a time. This makes it repeatable.
+One Wallet's best partners come through events (nomad meetups, expat socials, tech
+events). Today that research is manual, one city at a time. This makes it repeatable.
 
-Each scraped event yields two leads:
+Each event yields two leads:
 
-- **venue** — where it is held (often a café, coworking or coliving space)
-- **organizer** — who runs it, i.e. someone with an audience of expats and nomads
+- **venue** — where it is held, usually a café, bar, coworking or coliving space
+- **organizer** — who runs it, i.e. someone with a standing audience of expats and nomads
 
 ## Status
 
-Scraper only. No UI, no pipeline, no database yet.
+**Working MVP.** Scrapes Meetup, filters, and exports CSV. Deployed on Vercel.
 
-## Sources
+No login, no database, no API keys. Venue contact enrichment (phone, website,
+district via Google Places) is designed but not built — see `SPEC.md` §9.4.
 
-| Source | Method | Gives organizer | Notes |
-|---|---|---|---|
-| Meetup | JSON-LD in raw HTML | yes | primary source, ~75% of results |
-| Eventbrite | `window.__SERVER_DATA__` blob | no | brittle, date-only timestamps |
+## Run it
 
-Eventpop, Ticketmelon and tourismthailand.org were evaluated and rejected: JS-rendered
-or bot-blocked. They need a rendering scraper (e.g. Firecrawl) and are the route to
-Thai-language provincial events later.
+```bash
+nvm use          # Node 22
+npm install
+npm run dev      # http://localhost:3000
+npm test         # 11 tests, offline against a saved fixture
+npm run build
+```
 
-## Coverage
+## Measured coverage
 
-Meetup and Eventbrite are expat-facing platforms. Expect useful volume in Chiang Mai,
-Bangkok and Phuket (~10-15 events per city per week) and close to nothing elsewhere.
-Provincial Thai events live on Facebook and Thai ticketing sites, which are not covered.
+A live run on 24 Sep 2026, 7-day window:
 
-## Data
+| City | Events | Online dropped |
+|---|---|---|
+| Chiang Mai | 10 | 2 |
+| Bangkok | 9 | 3 |
+| Phuket | 4 | 4 |
 
-Scrape output is committed to `data/*.json`. This is deliberate:
+Expect **10–15 usable events per city per week**. This is a list a person reads on a
+Monday, not a data feed.
 
-- it is the datastore — no database is needed until humans start typing notes
-- git history gives a free daily archive of what changed
-- the app works offline from committed data, so a demo never depends on a live scrape
+Only these three cities are supported. Meetup is an expat-facing platform, so coverage
+elsewhere in Thailand approaches zero — provincial events are announced in Thai on
+Facebook and Thai ticketing sites, which this cannot reach. A 77-province dropdown
+would be empty in most of them; that is why there isn't one.
+
+## How it works
+
+```
+pick city + date range
+   ↓
+fetch the Meetup city listing
+   ↓
+extract schema.org Event records from its ld+json blocks
+   ↓
+drop online / venueless / out-of-range / duplicate
+   ↓
+render in Asia/Bangkok
+   ↓
+CSV, built in the browser
+```
+
+| Source | Method | Organizer |
+|---|---|---|
+| Meetup | `application/ld+json` in the raw HTML | yes, 12/12 measured |
+
+Eventbrite was working in the prototype and is **deferred**: no organizer field,
+date-only timestamps, and a parser that reads an internal JS blob. Eventpop,
+Ticketmelon, tourismthailand.org, allevents.in and Chiang Mai Citylife were evaluated
+and rejected — JS-rendered or bot-blocked. Reaching Thai-language provincial events
+needs a rendering scraper such as Firecrawl. See `SPEC.md` §6.
+
+## Things that are easy to get wrong
+
+- **Times are exported in `Asia/Bangkok`.** Meetup publishes UTC — `11:00Z` is a 6pm
+  event. Exporting raw UTC makes every row wrong by seven hours.
+- **The CSV carries a UTF-8 BOM.** Without it Excel mangles every Thai venue name.
+- **District is an output column, never a search input.** As a filter it would force a
+  paid lookup on every venue just to discard most of them.
+- **About half of raw results are online events** leaking into city searches. They are
+  filtered out, so the raw count is roughly double the useful count.
 
 ## Stack
 
-- TypeScript, Node 22
-- Next.js on Vercel (serving only)
-- GitHub Actions daily cron runs the scrape and commits the JSON
-- No API keys required
+TypeScript, Node 22, Next.js on Vercel. Native `fetch`, no scraping framework, no
+headless browser, no database, no cache.
 
-## Develop
+## Docs
 
-```bash
-npm install
-npm run scrape -- --city chiang-mai --days 7
-```
+- `SPEC.md` — the approved spec and the measured limits behind every decision
+- `specs/001-event-lead-finder/` — spec, plan, research, data model, contracts, tasks
+- `prototype/` — the Python prototype the fixtures came from. **Reference only**; a
+  code review found four bugs in it, all fixed in the TypeScript rather than ported.

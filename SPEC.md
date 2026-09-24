@@ -482,15 +482,15 @@ and is not an option for a new project.
 
 ## 10. Open questions
 
-1. **What does a partner actually do for One Wallet?** The brief never says.
-   Three different things are called "partner": a *merchant* who accepts
-   payment, a *top-up point* where cash enters the wallet, a *referrer* who
-   sends users. The word "top-up" does not appear in the brief; the only hint is
-   "money exchange" in the business-type list. **For Sunny.**
+1. ~~**What does a partner actually do for One Wallet?**~~ **Answered 24 Sep.**
+   The distinction between merchant, top-up point and referrer does not change what
+   the tool must produce: **business name, phone and address** is the deliverable
+   under all three readings. Ranking stays out of scope, so nothing downstream
+   depends on resolving it further.
 
-   This does not block the build. Milestones 1–6 are identical under all three
-   definitions — the answer determines ranking and which leads matter, both out
-   of scope for v1. Ask in parallel; do not wait on it.
+   Consequence: Places enrichment is scoped to **name, phone and address**. District
+   is cut along with the district filter it existed to serve, and `rating` stays cut.
+
 2. Who provisions and pays for the Google Cloud project and Places key?
 3. Confirm the three cities: Chiang Mai, Bangkok, Phuket.
 4. Who holds the shared password once milestone 7 lands, and where is it
