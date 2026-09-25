@@ -10,11 +10,24 @@ function first<T>(v: T | T[] | undefined): T | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
 
+/** Pick the entry that actually names a place; a hybrid event can list VirtualLocation first. */
+function pickPlace(loc: unknown): unknown {
+  const list = Array.isArray(loc) ? loc : [loc];
+  const real = list.find(
+    (p) =>
+      typeof p === "string" ||
+      (p && typeof p === "object" && (p as Record<string, unknown>)["@type"] !== "VirtualLocation"),
+  );
+  return real ?? list[0];
+}
+
 function flatAddress(loc: unknown): { venue: string | null; address: string | null } {
-  const place = first(loc as Record<string, unknown> | Record<string, unknown>[]);
+  const place = pickPlace(loc);
+  // schema.org allows location to be plain text; that text is the address.
+  if (typeof place === "string") return { venue: null, address: str(place) };
   if (!place || typeof place !== "object") return { venue: null, address: null };
-  const venue = str(place.name);
-  const a = place.address;
+  const venue = str((place as Record<string, unknown>).name);
+  const a = (place as Record<string, unknown>).address;
   if (typeof a === "string") return { venue, address: str(a) };
   if (a && typeof a === "object") {
     const parts = ["streetAddress", "addressLocality", "addressRegion", "postalCode"]
@@ -82,7 +95,9 @@ export function filterEvents(
       ? new Date(start.getTime() + 86_400_000 - 1)
       : start;
     if (upper < opts.now || start > opts.to) { dropped.outOfRange++; continue; }
-    const key = `${event.source}|${event.url || event.name}|${event.startUtc}`;
+    // Include the raw start and end: date-only sources give every session of a
+    // day the same instant, so startUtc alone would collapse distinct sittings.
+    const key = [event.source, event.url || event.name, event.startUtc, String(raw.startDate ?? ""), String(raw.endDate ?? "")].join("|");
     if (seen.has(key)) { dropped.duplicate++; continue; }
     seen.add(key);
     kept.push({ e: event, t: start.getTime() });

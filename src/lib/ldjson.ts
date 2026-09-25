@@ -46,13 +46,27 @@ export function extractEvents(html: string): RawEvent[] {
   return out;
 }
 
-/** Fetch several listing pages and merge, so one 404 never loses the rest. */
-export async function fetchAll(urls: string[], signal?: AbortSignal): Promise<RawEvent[]> {
+export type FetchAllResult = { events: RawEvent[]; failed: number; total: number; reason?: string };
+
+/**
+ * Fetch several listing pages and merge, so one 404 never loses the rest.
+ * Reports how many pages failed: a source that answered on 1 of 8 URLs is a
+ * truncated result, not a clean one, and the caller has to be able to say so.
+ */
+export async function fetchAll(urls: string[], signal?: AbortSignal): Promise<FetchAllResult> {
   const pages = await Promise.allSettled(urls.map((u) => fetchHtml(u, signal)));
-  const ok = pages.filter((p) => p.status === "fulfilled");
-  if (ok.length === 0) {
-    const first = pages[0] as PromiseRejectedResult;
-    throw first.reason instanceof Error ? first.reason : new Error(String(first.reason));
-  }
-  return ok.flatMap((p) => extractEvents((p as PromiseFulfilledResult<string>).value));
+  const ok = pages.filter((p) => p.status === "fulfilled") as PromiseFulfilledResult<string>[];
+  const bad = pages.filter((p) => p.status === "rejected") as PromiseRejectedResult[];
+  const reason = bad.length
+    ? bad[0].reason instanceof Error
+      ? bad[0].reason.message
+      : String(bad[0].reason)
+    : undefined;
+  if (ok.length === 0) throw new Error(reason ?? "all listing pages failed");
+  return {
+    events: ok.flatMap((p) => extractEvents(p.value)),
+    failed: bad.length,
+    total: urls.length,
+    reason,
+  };
 }

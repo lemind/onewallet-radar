@@ -40,20 +40,32 @@ export async function GET(req: Request) {
     const raws: { raw: RawEvent; source: Source }[] = [];
     const errors: SourceError[] = [];
 
+    let meetupDown = false;
     settled.forEach((r, i) => {
       const source = active[i].id;
       if (r.status === "fulfilled") {
-        for (const raw of r.value) raws.push({ raw, source });
+        for (const raw of r.value.events) raws.push({ raw, source });
+        // A source that answered on some of its pages returned a truncated list.
+        // Saying so is the difference between a short week and a broken scrape.
+        if (r.value.failed > 0) {
+          errors.push({
+            source,
+            message: `${r.value.failed} of ${r.value.total} listing pages failed (${r.value.reason})`,
+          });
+        }
       } else {
         const message = r.reason instanceof Error ? r.reason.message : String(r.reason);
         errors.push({ source, message });
+        if (source === "meetup") meetupDown = true;
       }
     });
 
-    // Only a total failure is fatal — there is nothing truthful to return.
-    if (errors.length === active.length) {
+    // Meetup is the only source carrying organizers, so losing it is not a
+    // degraded result — it is a different, much worse product pretending to work.
+    const allDown = settled.every((r) => r.status === "rejected");
+    if (allDown || meetupDown) {
       return NextResponse.json(
-        { error: "no source could be reached", events: [], errors },
+        { error: allDown ? "no source could be reached" : "meetup unreachable", events: [], errors },
         { status: 502 },
       );
     }

@@ -109,3 +109,56 @@ test("a non-string eventAttendanceMode does not throw", () => {
   assert.doesNotThrow(() => normalize(hybrid));
   assert.equal(normalize(hybrid).online, true);
 });
+
+test("an hour-only ISO offset parses instead of vanishing", () => {
+  const p = parseStart("2026-09-27T19:00:00+07")!;
+  assert.ok(p, "+07 must not produce Invalid Date");
+  assert.equal(toLocal(p.at, p.precision), "2026-09-27 19:00");
+});
+
+test("location published as plain text is kept as the address", () => {
+  const e = normalize({
+    "@type": "Event", name: "Founders Dinner", url: "https://x/1",
+    startDate: "2026-09-27", location: "Sukhumvit Soi 11, Bangkok",
+  }).event;
+  assert.equal(e.address, "Sukhumvit Soi 11, Bangkok");
+});
+
+test("a hybrid event keeps its real venue, not the VirtualLocation", () => {
+  const e = normalize({
+    "@type": "Event", name: "Hybrid", url: "https://x/2", startDate: "2026-09-27",
+    location: [
+      { "@type": "VirtualLocation", url: "https://zoom.us/j/1" },
+      { "@type": "Place", name: "The Commons", address: { streetAddress: "335 Thonglor" } },
+    ],
+  }).event;
+  assert.equal(e.venue, "The Commons");
+  assert.equal(e.address, "335 Thonglor");
+});
+
+test("two same-day sessions of one date-only listing both survive", () => {
+  const session = (endDate: string) => ({
+    raw: {
+      "@type": "Event", name: "Street Food Tour", url: "https://eb/tour",
+      startDate: "2026-09-27", endDate, location: { name: "Talad Noi" },
+    },
+    source: "eventbrite" as const,
+  });
+  const { events } = filterEvents([session("2026-09-27T12:00"), session("2026-09-27T20:00")], {
+    now: new Date("2026-09-25T00:00:00+07:00"),
+    to: new Date("2026-10-30T00:00:00+07:00"),
+  });
+  assert.equal(events.length, 2);
+});
+
+test("Excel formula characters are neutralised, so a phone number stays a phone number", () => {
+  const csv = toCsv([{
+    source: "meetup", name: "n", url: "u", startUtc: "", startLocal: "2026-09-27",
+    startPrecision: "date", end: null, venue: "=Escape Hunt",
+    address: "+66 2 656 1000", organizer: null, organizerUrl: null,
+  }]);
+  const row = csv.split("\r\n")[1];
+  assert.ok(!/,=Escape/.test(row), "a leading = must not reach Excel bare");
+  assert.ok(!/,\+66/.test(row), "a leading + must not reach Excel bare");
+  assert.ok(row.includes("Escape Hunt") && row.includes("66 2 656 1000"), "content survives");
+});
