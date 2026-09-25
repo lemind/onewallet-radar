@@ -84,7 +84,7 @@ selector is the main thing that would force Places onto the critical path.
 
 ### Explicitly out of scope
 
-Map view · pipeline / CRM · login system · Thai UI · vendor and sponsor lists ·
+Pipeline / CRM · login system · Thai UI · vendor and sponsor lists ·
 fit scoring · Telegram alerts · all 77 provinces · contract uploads ·
 importing existing data · district as a search input · Eventbrite (§6.2) ·
 Google rating (§6.4)
@@ -143,6 +143,17 @@ organizer field, and bare dates with no time of day (§7.1 handles the second).
 **Luma covers Bangkok only.** `lu.ma/chiang-mai` and `lu.ma/phuket` redirect to a
 generic discover page, so those cities are absent from its config rather than
 configured and empty.
+
+### 6.1b Map
+
+**Un-cut 25 Sep.** Event locations show on an OpenStreetMap map above the table.
+It costs nothing — no key, no account, no billing — which is why the original
+objection (a map meant Google, and Google meant a billed cloud project) no
+longer holds.
+
+Eventbrite and Luma publish venue coordinates; Meetup publishes a street address
+but none, so those leads appear in the table and not on the map. The legend says
+how many are shown. Closing that gap needs paid geocoding and is not planned.
 
 ### 6.2 Volume ceiling
 

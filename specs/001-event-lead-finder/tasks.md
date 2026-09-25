@@ -307,3 +307,18 @@ Reaching 100 for Chiang Mai needs Thai-language sources (Facebook Events, Thai
 ticketing sites), which are JavaScript-rendered and need a rendering scraper such
 as Firecrawl or Playwright. Roughly half a day, and the only route to those numbers.
 Bangkok already passes 78 over three months without it.
+
+---
+
+## Phase 9: Map and review fixes — 25 Sep
+
+- [ ] T056 Escape the event URL in the map popup and reject any scheme but http/https — scraped URLs are attacker-controlled and currently reach `href` raw
+- [ ] T057 Stop escaping the `<br>` separator in the popup, so venue and address render on two lines
+- [ ] T058 Validate coordinates in `geoOf` — require both present and in range, so a blank latitude cannot put a pin at 0°N and wreck the map bounds
+- [ ] T059 Take coordinates from the same location entry `pickPlace` chose, so a pin cannot belong to a different venue than the name beside it
+- [ ] T060 Key `canonicalUrl` on the registrable domain, not the first label — `lu.ma` and `luma.com` are the same source and currently dedupe apart
+- [ ] T061 Stop lowercasing the URL path — event ids are case-sensitive, so two real events can collapse into one
+- [ ] T062 Make the CDN loader retry after a failed load instead of hanging forever
+- [ ] T063 Show a message when the map fails to load, rather than a blank box under a caption claiming pins
+- [ ] T064 Remove the Leaflet instance on unmount
+- [ ] T065 Count line reads "N on the map from M found" — drop the date-range and duplicate breakdowns, which are noise

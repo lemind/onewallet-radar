@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CITIES } from "../lib/cities.ts";
 import { toCsv, filename } from "../lib/csv.ts";
 import type { RunResult } from "../types.ts";
+import Map from "./Map.tsx";
 
 function isoDate(d: Date): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(d);
@@ -52,19 +53,6 @@ export default function Page() {
     ? result.events.length + Object.values(result.dropped).reduce((a, b) => a + b, 0)
     : 0;
 
-  // Say what was left out and why. A bare "15 of 34" reads as data being lost.
-  const excluded = result
-    ? ([
-        [result.dropped.online, "online with no organiser"],
-        [result.dropped.outOfRange, "outside your dates"],
-        [result.dropped.duplicate, "listed twice"],
-        [result.dropped.noVenue, "no venue, address or organiser"],
-        [result.dropped.noDate, "no date published"],
-      ] as [number, string][])
-        .filter(([n]) => n > 0)
-        .map(([n, why]) => `${n} ${why}`)
-    : [];
-
   return (
     <main className="wrap">
       <div className="brand">
@@ -108,8 +96,7 @@ export default function Page() {
       {result && result.events.length === 0 && !error && (
         <p className="note">
           No leads in {CITIES.find((c) => c.id === result.city)?.label} between {result.from} and{" "}
-          {result.to}.{" "}
-          {raw > 0 && `${raw} listings were checked — ${excluded.join(", ")}.`}
+          {result.to}. {raw > 0 && `${raw} listings were checked.`}
         </p>
       )}
 
@@ -119,9 +106,9 @@ export default function Page() {
             <button className="ghost" onClick={download}>Download spreadsheet</button>
             <span className="count">
               <strong>{result.events.length} leads</strong> from {raw} listings
-              {excluded.length > 0 && <> — not shown: {excluded.join(", ")}</>}
             </span>
           </div>
+          <Map events={result.events} />
           <div className="scroll">
             <table>
               <thead>

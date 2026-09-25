@@ -19,6 +19,9 @@ export type Event = {
   organizerUrl: string | null;
   /** True when the source says it is online-only: an organizer lead, no venue. */
   online: boolean;
+  /** Venue coordinates where the source publishes them; Meetup never does. */
+  lat: number | null;
+  lng: number | null;
 };
 
 export type DroppedCounts = {
