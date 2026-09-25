@@ -21,6 +21,16 @@ function pickPlace(loc: unknown): unknown {
   return real ?? list[0];
 }
 
+function geoOf(loc: unknown): { lat: number | null; lng: number | null } {
+  const list = Array.isArray(loc) ? loc : [loc];
+  for (const p of list) {
+    const g = (p as Record<string, unknown> | null)?.["geo"] as Record<string, unknown> | undefined;
+    const lat = Number(g?.latitude), lng = Number(g?.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) return { lat, lng };
+  }
+  return { lat: null, lng: null };
+}
+
 function flatAddress(loc: unknown): { venue: string | null; address: string | null } {
   const place = pickPlace(loc);
   // schema.org allows location to be plain text; that text is the address.
@@ -62,6 +72,7 @@ export type Normalized = { event: Event; online: boolean; start: Date | null };
 
 export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized {
   const { venue, address } = flatAddress(raw.location);
+  const { lat, lng } = geoOf(raw.location);
   const org = first(raw.organizer as Record<string, unknown> | Record<string, unknown>[]);
   const parsed = parseStart(raw.startDate);
   return {
@@ -78,6 +89,8 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
       venue,
       address,
       online: isOnline(raw.eventAttendanceMode),
+      lat,
+      lng,
       organizer: org && typeof org === "object" ? str(org.name) : str(raw.organizer),
       organizerUrl: org && typeof org === "object" ? str(org.url) : null,
     },

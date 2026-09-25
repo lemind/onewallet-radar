@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CITIES } from "../lib/cities.ts";
 import { toCsv, filename } from "../lib/csv.ts";
 import type { RunResult } from "../types.ts";
+import Map from "./Map.tsx";
 
 function isoDate(d: Date): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(d);
@@ -122,6 +123,7 @@ export default function Page() {
               {excluded.length > 0 && <> — not shown: {excluded.join(", ")}</>}
             </span>
           </div>
+          <Map events={result.events} />
           <div className="scroll">
             <table>
               <thead>

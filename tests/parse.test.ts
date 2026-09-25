@@ -89,7 +89,7 @@ test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
       url: "https://x/1",
       startUtc: "2026-09-24T11:00:00.000Z",
       startLocal: "2026-09-24 18:00",
-      online: false,
+      online: false, lat: null, lng: null,
       startPrecision: "datetime",
       end: null,
       venue: 'The "Edge"',
@@ -176,7 +176,7 @@ test("two same-day sessions of one date-only listing both survive", () => {
 test("Excel formula characters are neutralised, so a phone number stays a phone number", () => {
   const csv = toCsv([{
     source: "meetup", name: "n", url: "u", startUtc: "", startLocal: "2026-09-27",
-    startPrecision: "date", end: null, online: false, venue: "=Escape Hunt",
+    startPrecision: "date", end: null, online: false, lat: null, lng: null, venue: "=Escape Hunt",
     address: "+66 2 656 1000", organizer: null, organizerUrl: null,
   }]);
   const row = csv.split("\r\n")[1];
