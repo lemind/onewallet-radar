@@ -54,7 +54,11 @@ export default function Page() {
 
   return (
     <main className="wrap">
-      <h1>onewallet radar</h1>
+      <div className="brand">
+        {/* Wordmark is 108x20; height is set in CSS so it scales with the header. */}
+        <img src="/logo.svg" alt="One Wallet" width={108} height={20} />
+        <h1>Radar</h1>
+      </div>
       <p className="sub">Upcoming events in Thai cities, and the venues and organizers behind them.</p>
 
       <form onSubmit={run}>
