@@ -30,7 +30,12 @@ function load(): Promise<any> {
     const s = document.createElement("script");
     s.src = JS;
     s.async = true;
-    s.onload = () => resolve(window.L);
+    s.onload = () => {
+      // A captive portal can answer 200 with HTML: onerror never fires, so check.
+      if (window.L) return resolve(window.L);
+      loader = null;
+      reject(new Error("map library did not load"));
+    };
     s.onerror = () => {
       loader = null; // let a later run try again
       s.remove();
@@ -66,6 +71,7 @@ export default function Map({ events }: { events: Event[] }) {
   useEffect(() => {
     if (pins.length === 0) return;
     let dead = false;
+    setFailed(false);
     load()
       .then((L) => {
         if (dead || !box.current) return;
@@ -104,15 +110,14 @@ export default function Map({ events }: { events: Event[] }) {
 
   return (
     <div className="mapwrap">
-      {failed ? (
-        <p className="note warn">The map could not load. The leads below are unaffected.</p>
-      ) : (
-        <div ref={box} className="map" />
+      {failed && <p className="note warn">The map could not load. The leads below are unaffected.</p>}
+      <div ref={box} className="map" hidden={failed} />
+      {!failed && (
+        <p className="maplegend">
+          {pins.length} on the map from {events.length} found — the rest publish an address with no
+          coordinates.
+        </p>
       )}
-      <p className="maplegend">
-        {pins.length} on the map from {events.length} found — the rest publish an address with no
-        coordinates.
-      </p>
     </div>
   );
 }

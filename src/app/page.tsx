@@ -53,8 +53,6 @@ export default function Page() {
     ? result.events.length + Object.values(result.dropped).reduce((a, b) => a + b, 0)
     : 0;
 
-  const pinned = result ? result.events.filter((e) => e.lat != null).length : 0;
-
   return (
     <main className="wrap">
       <div className="brand">
@@ -107,8 +105,7 @@ export default function Page() {
           <div className="bar">
             <button className="ghost" onClick={download}>Download spreadsheet</button>
             <span className="count">
-              <strong>{result.events.length} leads</strong>
-              {pinned > 0 && <> · {pinned} on the map from {result.events.length} found (rest have no address coordinates)</>}
+              <strong>{result.events.length} leads</strong> from {raw} listings
             </span>
           </div>
           <Map events={result.events} />
