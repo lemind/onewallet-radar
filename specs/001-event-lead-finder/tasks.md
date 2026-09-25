@@ -1,23 +1,23 @@
 # Tasks: Event-Sourced Partner Lead Finder
 
-> **STATUS 2026-09-24 — MVP is built, tested and deployed.**
-> Pick city + dates → scrape Meetup → download a spreadsheet. 23 tasks done.
-> Live-verified against all three cities: Chiang Mai 10, Bangkok 9, Phuket 4 events.
+> **STATUS 2026-09-25 — built, deployed and public.**
+> https://onewallet-radar.vercel.app — pick a city and dates, press Run, download a
+> spreadsheet. No login, no API keys, no database.
 >
-> **Remaining work, deploy-first.** Each step is shippable on its own — deploy after
-> every one and try it, rather than batching.
+> **Three sources live:** Meetup, Eventbrite (6 category paths), Luma.
+> Live counts for a one-week window: **Chiang Mai 15, Bangkok 31, Phuket 5.**
+> Bangkok over three months reaches 78.
 >
-> | # | Do | Why now |
-> |---|---|---|
-> | 1 | Turn off Deployment Protection in the Vercel dashboard | Nothing can be tried until this is off; it is a toggle, not a task |
-> | 2 | Send the URL round, use it on real leads | The next decisions should come from a real run, not a guess |
-> | 3 | ~~Places enrichment~~ | **CUT** — Meetup already gives name and address; Places added only a phone number, at the cost of a billed Google Cloud project. See the Phase 6 header |
->
-> Steps 1 and 2 are the whole remaining list, and neither is a coding task.
+> **Nothing is outstanding.** The Deployment Protection toggle and "send it to Sunny"
+> both cleared; the site is open and in use.
 >
 > **Cut for good:** Places enrichment and everything it dragged in (Google Cloud
 > project, API key, password protection, venue cache, Redis), the district column
-> and district filtering, Google rating, the query cache, and Eventbrite.
+> and district filtering, Google rating, and the query cache.
+>
+> **Un-cut:** Eventbrite is back and is now the largest source. It was dropped for a
+> brittle `__SERVER_DATA__` parser; it now publishes a clean schema.org `ItemList`
+> in a `ld+json` tag, so the reason no longer held. See Phase 8.
 >
 > **Do not port `prototype/scrape.py`.** It has four confirmed bugs. The TypeScript was
 > written fresh against `tests/fixtures/meetup-chiang-mai.html` and fixes all four.
@@ -30,11 +30,9 @@ These are requested explicitly — the port must reproduce the prototype's
 measured output, and saved HTML fixtures make that verifiable offline. No tests
 are written for the UI or for glue code.
 
-**Organization**: By user story, so each is independently implementable and
-testable. Stories are ordered by priority, with one deliberate exception:
-**US4 (protection) ships inside Phase 6 alongside US3**, not before it. Until a
-Run can spend money there is nothing to protect, and a login would only stand
-between Sunny and the thing we want feedback on. See T032.
+**Organization**: By user story. Phases 1-7 were the original plan; Phase 8 records
+the multi-source work that followed, which the original plan did not anticipate
+because it assumed Meetup would be the only viable source.
 
 ---
 
@@ -278,3 +276,34 @@ porting bug, not a better idea. Restructure afterwards if there is a reason.
 
 Parallel opportunities: 12 tasks marked `[P]`.
 Tasks requiring an API key: 7 — every Phase 6 task except T026.
+
+---
+
+## Phase 8: More sources — done 24-25 Sep
+
+Added after the first real use of the tool showed the honest problem was not
+enrichment but **volume**: one source per city returned around 10 leads a week.
+
+- [x] T047 Re-evaluate Eventbrite against the live site — found it now publishes a schema.org `ItemList` in a `ld+json` tag, not the internal `__SERVER_DATA__` blob that got it deferred; the objection was stale
+- [x] T048 Restore `startPrecision` in `src/lib/time.ts` and `src/types.ts` — Eventbrite publishes bare dates, so a date-only event renders as a date with no time rather than a fabricated midnight
+- [x] T049 Keep a date-only event for its whole day in `src/lib/normalize.ts`, or a same-day listing disappears one minute past midnight
+- [x] T050 Unify extraction in `src/lib/ldjson.ts` — one parser handling both direct `Event` nodes (Meetup) and `ItemList` wrappers (Eventbrite, Luma), replacing the per-source files
+- [x] T051 Add Luma as a third source — same `ItemList` shape, carries organizers and real timestamps. Bangkok only: Chiang Mai and Phuket redirect to `/discover`, so those cities are simply absent from its config
+- [x] T052 Fetch six Eventbrite category paths per city in `src/lib/sources.ts`, not just the base listing — measured +5 unique events for Chiang Mai. Pagination was tested and rejected: `?page=2` adds 3, `?page=3` adds 0
+- [x] T053 Extend per-source degradation to three sources in `src/app/api/run/route.ts` — `Promise.allSettled`, one source failing never discards the others, only a total failure returns 502
+- [x] T054 Show the address under the venue name and a source column in `src/app/page.tsx`
+- [x] T055 Remove `src/lib/meetup.ts` and `src/lib/eventbrite.ts`, superseded by `ldjson.ts`
+
+**Checkpoint met**: Bangkok went 11 → 31 for a one-week window, Chiang Mai 11 → 15.
+12 tests pass, typecheck and build clean, verified in production.
+
+### Measured ceiling, so nobody chases it again
+
+Chiang Mai over **three months** returns 15 with `outOfRange: 0` — nothing is being
+filtered for dates. That is the entire supply across all three sources for the rest
+of the year, not a limit in the code. There is no cap, no `slice`, no page cutoff.
+
+Reaching 100 for Chiang Mai needs Thai-language sources (Facebook Events, Thai
+ticketing sites), which are JavaScript-rendered and need a rendering scraper such
+as Firecrawl or Playwright. Roughly half a day, and the only route to those numbers.
+Bangkok already passes 78 over three months without it.

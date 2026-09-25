@@ -34,24 +34,24 @@ district via Google Places) is designed but not built — see `SPEC.md` §9.4.
 nvm use          # Node 22
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 11 tests, offline against a saved fixture
+npm test         # 12 tests, offline against a saved fixture
 npm run build
 ```
 
 ## Measured coverage
 
-A live run on 24 Sep 2026, 7-day window:
+A live run on 25 Sep 2026:
 
-| City | Events | Online dropped |
+| City | One week | Three months |
 |---|---|---|
-| Chiang Mai | 10 | 2 |
-| Bangkok | 9 | 3 |
-| Phuket | 4 | 4 |
+| Chiang Mai | 15 | 15 |
+| Bangkok | **31** | **78** |
+| Phuket | 5 | 7 |
 
-Expect **10–15 usable events per city per week**. This is a list a person reads on a
-Monday, not a data feed.
+Chiang Mai's two numbers are identical because that is the entire supply across
+all three sources — nothing is filtered out for being too far ahead.
 
-Only these three cities are supported. Meetup is an expat-facing platform, so coverage
+Only these three cities are supported. All three sources are expat-facing, so coverage
 elsewhere in Thailand approaches zero — provincial events are announced in Thai on
 Facebook and Thai ticketing sites, which this cannot reach. A 77-province dropdown
 would be empty in most of them; that is why there isn't one.
@@ -72,23 +72,27 @@ render in Asia/Bangkok
 CSV, built in the browser
 ```
 
-| Source | Method | Organizer |
-|---|---|---|
-| Meetup | `application/ld+json` in the raw HTML | yes, 12/12 measured |
+| Source | Method | Organizer | Cities |
+|---|---|---|---|
+| Meetup | `Event` nodes in `ld+json` | yes | all three |
+| Eventbrite | schema.org `ItemList`, 6 category paths | no, and date-only | all three |
+| Luma | schema.org `ItemList` | yes | Bangkok only |
 
-Eventbrite was working in the prototype and is **deferred**: no organizer field,
-date-only timestamps, and a parser that reads an internal JS blob. Eventpop,
-Ticketmelon, tourismthailand.org, allevents.in and Chiang Mai Citylife were evaluated
-and rejected — JS-rendered or bot-blocked. Reaching Thai-language provincial events
-needs a rendering scraper such as Firecrawl. See `SPEC.md` §6.
+One parser reads all three (`src/lib/ldjson.ts`) — they publish the same
+schema.org shapes, directly or wrapped in an `ItemList`.
+
+Eventpop, Ticketmelon, tourismthailand.org, allevents.in and Chiang Mai Citylife
+were evaluated and rejected — JavaScript-rendered or bot-blocked. Reaching
+Thai-language provincial events needs a rendering scraper such as Firecrawl.
+See `SPEC.md` §6.
 
 ## Things that are easy to get wrong
 
 - **Times are exported in `Asia/Bangkok`.** Meetup publishes UTC — `11:00Z` is a 6pm
   event. Exporting raw UTC makes every row wrong by seven hours.
 - **The CSV carries a UTF-8 BOM.** Without it Excel mangles every Thai venue name.
-- **District is an output column, never a search input.** As a filter it would force a
-  paid lookup on every venue just to discard most of them.
+- **Eventbrite rows have no time of day.** They publish a bare date, so those rows
+  export a date with an empty time cell rather than a fabricated midnight.
 - **About half of raw results are online events** leaking into city searches. They are
   filtered out, so the raw count is roughly double the useful count.
 

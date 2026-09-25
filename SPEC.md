@@ -118,30 +118,42 @@ stages is added.
 
 ## 6. Data sources
 
-### 6.1 Used in v1
+### 6.1 Used in v1 — three sources
 
-| Source | Method | Organizer | Time precision |
-|---|---|---|---|
-| **Meetup** | `application/ld+json` in raw HTML | yes, 12/12 measured | full timestamp |
+| Source | Method | Organizer | Time precision | Cities |
+|---|---|---|---|---|
+| **Meetup** | `Event` nodes in `ld+json` | yes, 12/12 measured | full timestamp | all three |
+| **Eventbrite** | schema.org `ItemList` in `ld+json`, 6 category paths | no | **date only** | all three |
+| **Luma** | schema.org `ItemList` in `ld+json` | yes | full timestamp | **Bangkok only** |
 
-Meetup is the only source in v1. It is the only one that returns an organizer,
-the only one with usable time precision, and it produced 22 of the 30 measured
-events across three cities.
+All three are read by one parser (`src/lib/ldjson.ts`) because they publish the
+same schema.org shapes — directly for Meetup, wrapped in an `ItemList` for the
+other two.
 
-### 6.2 Deferred: Eventbrite
+Measured for a one-week window on 25 Sep: **Chiang Mai 15, Bangkok 31, Phuket 5.**
+Bangkok reaches 78 over three months.
 
-Eventbrite worked in the prototype and is **deliberately deferred**, not merely
-deprioritized. It contributed 8 of 30 measured events and costs:
+**Eventbrite was un-deferred on 24 Sep.** v0.2 dropped it partly because its
+parser had to dig through `window.__SERVER_DATA__`, an internal JS structure. That
+is no longer how it publishes: it now emits a clean schema.org `ItemList` in a
+`ld+json` script tag, which is standard markup. The measurement the decision
+rested on had gone stale. Its two real costs remain and are accepted: no
+organizer field, and bare dates with no time of day (§7.1 handles the second).
 
-- **no organizer field** — its rows deliver one lead instead of two
-- **date-only timestamps** — every measured record is `00:00:00` with no offset,
-  which cannot be represented honestly alongside real timestamps (§7.1)
-- **a brittle parser** — it reads `window.__SERVER_DATA__`, an internal
-  structure that can change without notice or version
+**Luma covers Bangkok only.** `lu.ma/chiang-mai` and `lu.ma/phuket` redirect to a
+generic discover page, so those cities are absent from its config rather than
+configured and empty.
 
-Dropping it removes the entire date-precision problem and the most fragile code
-in the project, at a cost of ~25% of volume in the lowest-value rows. Revisit
-once v1 is in daily use and someone asks for more volume.
+### 6.2 Volume ceiling
+
+Chiang Mai over three months returns 15 with **zero** events dropped as
+out-of-range — nothing is being filtered for dates. That is the whole supply
+across all three sources, not a limit in the code. There is no cap and no
+pagination cutoff; Eventbrite `?page=2` adds 3 results and `?page=3` adds none.
+
+Passing ~100 for Chiang Mai needs Thai-language sources (Facebook Events, Thai
+ticketing), which are JavaScript-rendered and require a rendering scraper such as
+Firecrawl. Bangkok already passes 78 without one.
 
 ### 6.3 Evaluated and rejected
 
