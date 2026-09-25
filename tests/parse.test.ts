@@ -201,3 +201,35 @@ test("one event served under two country domains is a single lead", () => {
   assert.equal(events.length, 1, "same path, different TLD is the same event");
   assert.equal(dropped.duplicate, 1);
 });
+
+test("one event under two domains is a single lead, and case-different ids are not", () => {
+  const win = { now: new Date("2026-09-25T00:00:00+07:00"), to: new Date("2026-10-30T00:00:00+07:00") };
+  const at = (url: string) => ({
+    raw: { "@type": "Event", name: "E", startDate: "2026-09-28", url, location: { name: "V" } },
+    source: "luma" as const,
+  });
+  assert.equal(filterEvents([at("https://lu.ma/e/abc"), at("https://luma.com/e/abc")], win).events.length, 1);
+  assert.equal(filterEvents([at("https://lu.ma/K3mQz9"), at("https://lu.ma/k3mqz9")], win).events.length, 2);
+});
+
+test("a blank or out-of-range coordinate yields no pin", () => {
+  const geo = (g: unknown) =>
+    normalize({ "@type": "Event", name: "E", url: "https://x/1", startDate: "2026-09-28",
+                location: { name: "V", geo: g } }).event;
+  assert.equal(geo({ latitude: "", longitude: "100.52" }).lat, null, "blank latitude is not 0N");
+  assert.equal(geo({ latitude: 999, longitude: 100 }).lat, null, "out of range");
+  assert.equal(geo({ latitude: 0, longitude: 0 }).lat, null, "null island is missing, not a place");
+  assert.equal(geo({ latitude: "18.7135", longitude: "98.9188" }).lat, 18.7135, "strings parse");
+});
+
+test("coordinates come from the same entry as the venue name", () => {
+  const e = normalize({
+    "@type": "Event", name: "E", url: "https://x/2", startDate: "2026-09-28",
+    location: [
+      { "@type": "Place", name: "Nimman Coworking", address: { streetAddress: "Chiang Mai" } },
+      { "@type": "Place", name: "Bangkok HQ", geo: { latitude: 13.7563, longitude: 100.5018 } },
+    ],
+  }).event;
+  assert.equal(e.venue, "Nimman Coworking");
+  assert.equal(e.lat, null, "must not borrow the other entry's pin");
+});

@@ -53,18 +53,7 @@ export default function Page() {
     ? result.events.length + Object.values(result.dropped).reduce((a, b) => a + b, 0)
     : 0;
 
-  // Say what was left out and why. A bare "15 of 34" reads as data being lost.
-  const excluded = result
-    ? ([
-        [result.dropped.online, "online with no organiser"],
-        [result.dropped.outOfRange, "outside your dates"],
-        [result.dropped.duplicate, "listed twice"],
-        [result.dropped.noVenue, "no venue, address or organiser"],
-        [result.dropped.noDate, "no date published"],
-      ] as [number, string][])
-        .filter(([n]) => n > 0)
-        .map(([n, why]) => `${n} ${why}`)
-    : [];
+  const pinned = result ? result.events.filter((e) => e.lat != null).length : 0;
 
   return (
     <main className="wrap">
@@ -109,8 +98,7 @@ export default function Page() {
       {result && result.events.length === 0 && !error && (
         <p className="note">
           No leads in {CITIES.find((c) => c.id === result.city)?.label} between {result.from} and{" "}
-          {result.to}.{" "}
-          {raw > 0 && `${raw} listings were checked — ${excluded.join(", ")}.`}
+          {result.to}. {raw > 0 && `${raw} listings were checked.`}
         </p>
       )}
 
@@ -119,8 +107,8 @@ export default function Page() {
           <div className="bar">
             <button className="ghost" onClick={download}>Download spreadsheet</button>
             <span className="count">
-              <strong>{result.events.length} leads</strong> from {raw} listings
-              {excluded.length > 0 && <> — not shown: {excluded.join(", ")}</>}
+              <strong>{result.events.length} leads</strong>
+              {pinned > 0 && <> · {pinned} on the map from {result.events.length} found (rest have no address coordinates)</>}
             </span>
           </div>
           <Map events={result.events} />

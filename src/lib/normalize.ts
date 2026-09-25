@@ -21,14 +21,18 @@ function pickPlace(loc: unknown): unknown {
   return real ?? list[0];
 }
 
-function geoOf(loc: unknown): { lat: number | null; lng: number | null } {
-  const list = Array.isArray(loc) ? loc : [loc];
-  for (const p of list) {
-    const g = (p as Record<string, unknown> | null)?.["geo"] as Record<string, unknown> | undefined;
-    const lat = Number(g?.latitude), lng = Number(g?.longitude);
-    if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) return { lat, lng };
-  }
-  return { lat: null, lng: null };
+// Read geo off the entry pickPlace chose, never a different one, or the pin
+// would belong to a different venue than the name beside it.
+function geoOf(place: unknown): { lat: number | null; lng: number | null } {
+  const g = (place as Record<string, unknown> | null)?.["geo"] as Record<string, unknown> | undefined;
+  if (!g) return { lat: null, lng: null };
+  const num = (v: unknown) => (typeof v === "number" || (typeof v === "string" && v.trim() !== "") ? Number(v) : NaN);
+  const lat = num(g.latitude), lng = num(g.longitude);
+  const ok =
+    Number.isFinite(lat) && Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 && Math.abs(lng) <= 180 &&
+    !(lat === 0 && lng === 0); // null island is a missing value, not a place
+  return ok ? { lat, lng } : { lat: null, lng: null };
 }
 
 function flatAddress(loc: unknown): { venue: string | null; address: string | null } {
@@ -54,15 +58,16 @@ function isOnline(v: unknown): boolean {
   return vals.some((x) => typeof x === "string" && x.endsWith("OnlineEventAttendanceMode"));
 }
 
-// HACK(eventbrite): one event is served under many country TLDs (.com, .sg,
-// .co.uk), so the host varies while the path does not. Observed 25 Sep: "AI for
-// Women" appeared twice in Chiang Mai, from eventbrite.com and eventbrite.sg.
-// REVISIT: drop if a later run shows the host is stable per event.
+// HACK(eventbrite,luma): one event is served under several domains — .com and
+// .sg for Eventbrite, lu.ma and luma.com for Luma. Observed 25 Sep: "AI for
+// Women" appeared twice in Chiang Mai. The source is already in the dedupe key,
+// so the path alone identifies the event and the host is noise.
+// REVISIT: drop if a later run shows one host per event.
 function canonicalUrl(u: string): string {
   try {
-    const { hostname, pathname } = new URL(u);
-    const brand = hostname.replace(/^www\./, "").split(".")[0];
-    return `${brand}${pathname.replace(/\/+$/, "")}`.toLowerCase();
+    // Path case is preserved: event ids are case-sensitive base-62 tokens, so
+    // lowercasing would merge two genuinely different events.
+    return new URL(u).pathname.replace(/\/+$/, "") || u.toLowerCase();
   } catch {
     return u.toLowerCase();
   }
@@ -72,7 +77,7 @@ export type Normalized = { event: Event; online: boolean; start: Date | null };
 
 export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized {
   const { venue, address } = flatAddress(raw.location);
-  const { lat, lng } = geoOf(raw.location);
+  const { lat, lng } = geoOf(pickPlace(raw.location));
   const org = first(raw.organizer as Record<string, unknown> | Record<string, unknown>[]);
   const parsed = parseStart(raw.startDate);
   return {
