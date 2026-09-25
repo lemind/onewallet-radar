@@ -44,6 +44,20 @@ function isOnline(v: unknown): boolean {
   return vals.some((x) => typeof x === "string" && x.endsWith("OnlineEventAttendanceMode"));
 }
 
+// HACK(eventbrite): one event is served under many country TLDs (.com, .sg,
+// .co.uk), so the host varies while the path does not. Observed 25 Sep: "AI for
+// Women" appeared twice in Chiang Mai, from eventbrite.com and eventbrite.sg.
+// REVISIT: drop if a later run shows the host is stable per event.
+function canonicalUrl(u: string): string {
+  try {
+    const { hostname, pathname } = new URL(u);
+    const brand = hostname.replace(/^www\./, "").split(".")[0];
+    return `${brand}${pathname.replace(/\/+$/, "")}`.toLowerCase();
+  } catch {
+    return u.toLowerCase();
+  }
+}
+
 export type Normalized = { event: Event; online: boolean; start: Date | null };
 
 export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized {
@@ -100,7 +114,12 @@ export function filterEvents(
     if (upper < opts.now || start > opts.to) { dropped.outOfRange++; continue; }
     // Include the raw start and end: date-only sources give every session of a
     // day the same instant, so startUtc alone would collapse distinct sittings.
-    const key = [event.source, event.url || event.name, event.startUtc, String(raw.startDate ?? ""), String(raw.endDate ?? "")].join("|");
+    const key = [
+      event.source,
+      event.url ? canonicalUrl(event.url) : event.name.toLowerCase(),
+      String(raw.startDate ?? ""),
+      String(raw.endDate ?? ""),
+    ].join("|");
     if (seen.has(key)) { dropped.duplicate++; continue; }
     seen.add(key);
     kept.push({ e: event, t: start.getTime() });
