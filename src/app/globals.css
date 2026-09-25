@@ -88,6 +88,8 @@ select:focus, input:focus { outline: 2px solid var(--brand); outline-offset: 1px
 .mapwrap { margin-bottom: 14px; }
 .map { height: 340px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
 .map a { color: var(--accent); }
+.pev { margin: 6px 0 0; padding-left: 16px; }
+.pev li { margin: 2px 0; }
 .maplegend { color: var(--muted); font-size: 12px; margin: 6px 2px 0; }
 @media (max-width: 480px) { .map { height: 260px; } }
 

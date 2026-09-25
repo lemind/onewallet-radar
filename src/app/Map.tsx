@@ -68,6 +68,16 @@ export default function Map({ events }: { events: Event[] }) {
 
   const pins = events.filter((e) => e.lat != null && e.lng != null);
 
+  // One marker per venue, not per event: two events at the same place stack
+  // exactly on top of each other and the second is invisible. Grouping also
+  // surfaces the repeat venues, which are the stronger leads.
+  const byPlace: Record<string, Event[]> = {};
+  for (const e of pins) {
+    const key = `${e.lat!.toFixed(5)},${e.lng!.toFixed(5)}`;
+    (byPlace[key] ??= []).push(e);
+  }
+  const venues = Object.values(byPlace);
+
   useEffect(() => {
     if (pins.length === 0) return;
     let dead = false;
@@ -81,13 +91,23 @@ export default function Map({ events }: { events: Event[] }) {
           maxZoom: 19,
         }).addTo(map.current);
         const group = L.layerGroup().addTo(map.current);
-        for (const e of pins) {
-          const where = [e.venue, e.address].filter(Boolean).map(esc).join("<br>");
-          const href = safeHref(e.url);
+        for (const at of venues) {
+          const head = at[0];
+          const where = [head.venue, head.address].filter(Boolean).map(esc).join("<br>");
+          const list = at
+            .map((e) => {
+              const href = safeHref(e.url);
+              const name = href
+                ? `<a href="${href}" target="_blank" rel="noreferrer">${esc(e.name)}</a>`
+                : esc(e.name);
+              return `<li>${esc(e.startLocal)} — ${name}</li>`;
+            })
+            .join("");
           group.addLayer(
-            L.marker([e.lat, e.lng]).bindPopup(
-              `<strong>${esc(e.name)}</strong><br>${esc(e.startLocal)}<br>${where}` +
-                (href ? `<br><a href="${href}" target="_blank" rel="noreferrer">open</a>` : ""),
+            L.marker([head.lat, head.lng]).bindPopup(
+              `<strong>${where}</strong>` +
+                (at.length > 1 ? `<br><em>${at.length} events</em>` : "") +
+                `<ul class="pev">${list}</ul>`,
             ),
           );
         }
@@ -114,8 +134,8 @@ export default function Map({ events }: { events: Event[] }) {
       <div ref={box} className="map" hidden={failed} />
       {!failed && (
         <p className="maplegend">
-          {pins.length} on the map from {events.length} found — the rest publish an address with no
-          coordinates.
+          {venues.length} {venues.length === 1 ? "location" : "locations"} on the map, {pins.length} of{" "}
+          {events.length} leads — the rest publish an address with no coordinates.
         </p>
       )}
     </div>
