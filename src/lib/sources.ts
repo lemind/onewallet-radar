@@ -10,11 +10,13 @@ export const SOURCES: {
   urls: Partial<Record<CityId, string[]>>;
 }[] = [
   {
+    // fiftyMiles adds a couple of events per city; hundredMiles and beyond add
+    // nothing, so the wider radii are not worth the extra fetch.
     id: "meetup",
     urls: {
-      "chiang-mai": ["https://www.meetup.com/find/?location=th--Chiang-Mai&source=EVENTS"],
-      bangkok: ["https://www.meetup.com/find/?location=th--Bangkok&source=EVENTS"],
-      phuket: ["https://www.meetup.com/find/?location=th--Phuket&source=EVENTS"],
+      "chiang-mai": muPaths("th--Chiang-Mai"),
+      bangkok: muPaths("th--Bangkok"),
+      phuket: muPaths("th--Phuket"),
     },
   },
   {
@@ -43,6 +45,11 @@ export const SOURCES: {
     },
   },
 ];
+
+function muPaths(slug: string): string[] {
+  const base = `https://www.meetup.com/find/?location=${slug}&source=EVENTS`;
+  return [base, `${base}&distance=fiftyMiles`];
+}
 
 function ebPaths(slug: string): string[] {
   const base = `https://www.eventbrite.com/d/${slug}`;
