@@ -17,6 +17,8 @@ export type Event = {
   address: string | null;
   organizer: string | null;
   organizerUrl: string | null;
+  /** True when the source says it is online-only: an organizer lead, no venue. */
+  online: boolean;
 };
 
 export type DroppedCounts = {

@@ -13,7 +13,10 @@ export const COLUMNS = [
 
 function cell(v: string | null): string {
   if (!v) return "";
-  return /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+  // Excel reads a leading = + - @ as a formula, so "+66 2 656 1000" renders as
+  // #NAME? instead of the number someone needs to dial. A tab stops that.
+  const safe = /^[=+\-@\t\r]/.test(v) ? `\t${v}` : v;
+  return /[",\r\n\t]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
 function row(e: Event): string {

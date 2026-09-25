@@ -26,8 +26,12 @@ export function parseStart(raw: unknown): Parsed | null {
     const d = new Date(`${s}T00:00:00+07:00`);
     return Number.isNaN(d.getTime()) ? null : { at: d, precision: "date" };
   }
-  const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(s);
-  const d = new Date(hasOffset ? s : `${s}+07:00`);
+  // Accept Z, +07:00, +0700 and the bare-hour +07; only a truly naive value
+  // gets Bangkok appended, or "...+07" would become "...+07+07:00".
+  const m = s.match(/([+-]\d{2})$/);
+  const normalized = m ? `${s}:00` : s;
+  const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized);
+  const d = new Date(hasOffset ? normalized : `${normalized}+07:00`);
   return Number.isNaN(d.getTime()) ? null : { at: d, precision: "datetime" };
 }
 
