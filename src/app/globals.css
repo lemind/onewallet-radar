@@ -76,7 +76,9 @@ button.ghost:hover { border-color: var(--brand); color: var(--brand); background
 select:focus, input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
 
 .bar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-.count { color: var(--muted); font-size: 13px; }
+.count { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.count strong { color: var(--fg); font-weight: 600; }
+.tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; margin-left: 6px; white-space: nowrap; }
 
 .note { padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--muted); }
 .note.bad { border-color: #d9534f66; color: #d9534f; }

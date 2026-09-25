@@ -63,6 +63,7 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
       end: str(raw.endDate),
       venue,
       address,
+      online: isOnline(raw.eventAttendanceMode),
       organizer: org && typeof org === "object" ? str(org.name) : str(raw.organizer),
       organizerUrl: org && typeof org === "object" ? str(org.url) : null,
     },
@@ -85,9 +86,11 @@ export function filterEvents(
 
   for (const { raw, source } of raws) {
     const { event, online, start } = normalize(raw, source);
-    if (online) { dropped.online++; continue; }
-    // A lead needs somewhere to go: keep anything with a venue name or an address.
-    if (!event.venue && !event.address) { dropped.noVenue++; continue; }
+    // An online event has no venue lead, but its organizer is still a referral
+    // lead. Keep it when it names one; drop the global webinars that name nobody.
+    if (online && !event.organizer) { dropped.online++; continue; }
+    // A lead needs somewhere to go: a venue, an address, or a named organizer.
+    if (!event.venue && !event.address && !event.organizer) { dropped.noVenue++; continue; }
     if (!start) { dropped.noDate++; continue; }
     // A date-only event covers its whole day, so compare against its end of day
     // or a same-day listing would be dropped the moment the clock passed midnight.

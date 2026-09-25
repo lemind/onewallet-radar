@@ -52,12 +52,33 @@ test("results come back in chronological order", () => {
   assert.deepEqual(times, [...times].sort((a, b) => a - b));
 });
 
-test("online events are dropped, not shown", () => {
-  const { dropped } = filterEvents(TAGGED, {
-    now: new Date("2020-01-01T00:00:00+07:00"),
-    to: new Date("2030-01-01T00:00:00+07:00"),
-  });
-  assert.ok(dropped.online >= 1);
+test("an online event with no organiser is dropped, one with an organiser is kept", () => {
+  const window = {
+    now: new Date("2026-09-25T00:00:00+07:00"),
+    to: new Date("2026-10-30T00:00:00+07:00"),
+  };
+  const base = {
+    "@type": "Event",
+    startDate: "2026-09-27T10:00:00+07:00",
+    eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+  };
+  const anon = filterEvents(
+    [{ raw: { ...base, name: "Virtual Book Club", url: "https://x/1" }, source: "eventbrite" }],
+    window,
+  );
+  assert.equal(anon.events.length, 0, "a global webinar naming nobody is noise");
+  assert.equal(anon.dropped.online, 1);
+
+  const named = filterEvents(
+    [{
+      raw: { ...base, name: "Speak English Online", url: "https://x/2",
+             organizer: { name: "Indo-Japan Kai", url: "https://meetup.com/ijk" } },
+      source: "meetup",
+    }],
+    window,
+  );
+  assert.equal(named.events.length, 1, "an online organiser is still a referral lead");
+  assert.equal(named.events[0].online, true);
 });
 
 test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
@@ -68,6 +89,7 @@ test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
       url: "https://x/1",
       startUtc: "2026-09-24T11:00:00.000Z",
       startLocal: "2026-09-24 18:00",
+      online: false,
       startPrecision: "datetime",
       end: null,
       venue: 'The "Edge"',
@@ -154,7 +176,7 @@ test("two same-day sessions of one date-only listing both survive", () => {
 test("Excel formula characters are neutralised, so a phone number stays a phone number", () => {
   const csv = toCsv([{
     source: "meetup", name: "n", url: "u", startUtc: "", startLocal: "2026-09-27",
-    startPrecision: "date", end: null, venue: "=Escape Hunt",
+    startPrecision: "date", end: null, online: false, venue: "=Escape Hunt",
     address: "+66 2 656 1000", organizer: null, organizerUrl: null,
   }]);
   const row = csv.split("\r\n")[1];
