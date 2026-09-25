@@ -31,6 +31,17 @@ export const SOURCES: {
     id: "luma",
     urls: { bangkok: ["https://luma.com/bangkok"] },
   },
+  {
+    // The city page carries the events; its category sub-pages repeat the same
+    // set, so one fetch per city is enough. Measured 25 Sep: Chiang Mai 40,
+    // Bangkok 65, Phuket 13, all with venue, address and coordinates.
+    id: "allevents",
+    urls: {
+      "chiang-mai": ["https://allevents.in/chiang-mai/"],
+      bangkok: ["https://allevents.in/bangkok/"],
+      phuket: ["https://allevents.in/phuket/"],
+    },
+  },
 ];
 
 function ebPaths(slug: string): string[] {

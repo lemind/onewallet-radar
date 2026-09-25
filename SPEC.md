@@ -125,13 +125,22 @@ stages is added.
 | **Meetup** | `Event` nodes in `ld+json` | yes, 12/12 measured | full timestamp | all three |
 | **Eventbrite** | schema.org `ItemList` in `ld+json`, 6 category paths | no | **date only** | all three |
 | **Luma** | schema.org `ItemList` in `ld+json` | yes | full timestamp | **Bangkok only** |
+| **allevents.in** | loose `Event` nodes + `ItemList` in `ld+json` | ~60% | date | all three |
 
 All three are read by one parser (`src/lib/ldjson.ts`) because they publish the
 same schema.org shapes — directly for Meetup, wrapped in an `ItemList` for the
 other two.
 
-Measured for a one-week window on 25 Sep: **Chiang Mai 15, Bangkok 31, Phuket 5.**
-Bangkok reaches 78 over three months.
+Measured for a one-week window on 25 Sep, after adding allevents.in:
+**Chiang Mai 24, Bangkok 46, Phuket 12** — map locations 12, 29 and 2.
+
+**allevents.in was wrongly rejected in v0.2.** It was recorded as publishing
+"only FAQ and breadcrumb data"; that measurement used `/chiang-mai/all`, and the
+events are at `/chiang-mai/`. The correct page carries 40 Chiang Mai events with
+venue, address and coordinates on every one — better metadata than any other
+source, and the only one reaching Thai-language venues such as the Yi Peng
+festivals. Re-added 25 Sep. Its category sub-pages repeat the same set, so one
+fetch per city is enough.
 
 **Eventbrite was un-deferred on 24 Sep.** v0.2 dropped it partly because its
 parser had to dig through `window.__SERVER_DATA__`, an internal JS structure. That
@@ -173,7 +182,6 @@ Firecrawl. Bangkok already passes 78 without one.
 | Eventpop | 2.7 KB shell — fully JS-rendered |
 | Ticketmelon | JS-rendered, no structured data |
 | tourismthailand.org | HTTP 403, bot-blocked |
-| allevents.in | JSON-LD contains only FAQ and breadcrumb data |
 | Chiang Mai Citylife | No event schema; would need a bespoke parser |
 
 Eventpop and Ticketmelon are Thai-language platforms and are the route to
