@@ -184,3 +184,20 @@ test("Excel formula characters are neutralised, so a phone number stays a phone 
   assert.ok(!/,\+66/.test(row), "a leading + must not reach Excel bare");
   assert.ok(row.includes("Escape Hunt") && row.includes("66 2 656 1000"), "content survives");
 });
+
+test("one event served under two country domains is a single lead", () => {
+  const listing = (host: string) => ({
+    raw: {
+      "@type": "Event", name: "AI for Women", startDate: "2026-09-28",
+      url: `https://www.${host}/e/ai-for-women-tickets-123`,
+      location: { name: "4Seas Nimman", address: { streetAddress: "20 Nimmanahaeminda Rd" } },
+    },
+    source: "eventbrite" as const,
+  });
+  const { events, dropped } = filterEvents(
+    [listing("eventbrite.com"), listing("eventbrite.sg")],
+    { now: new Date("2026-09-25T00:00:00+07:00"), to: new Date("2026-10-30T00:00:00+07:00") },
+  );
+  assert.equal(events.length, 1, "same path, different TLD is the same event");
+  assert.equal(dropped.duplicate, 1);
+});
