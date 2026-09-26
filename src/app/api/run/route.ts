@@ -58,6 +58,8 @@ export async function GET(req: Request) {
             source,
             message: `${r.value.failed} of ${r.value.total} listing pages failed (${r.value.reason})`,
           });
+        } else if (r.value.note) {
+          errors.push({ source, message: r.value.note });
         }
       } else {
         const message = r.reason instanceof Error ? r.reason.message : String(r.reason);

@@ -62,6 +62,8 @@ export async function fetchHtml(url: string, signal?: AbortSignal): Promise<stri
 /** Abortable so the route's deadline is not held open by a pending timer. */
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
+    // addEventListener never fires on an already-aborted signal.
+    if (signal?.aborted) return resolve();
     const t = setTimeout(done, ms);
     function done() {
       clearTimeout(t);
@@ -124,7 +126,14 @@ export function extractEvents(html: string): RawEvent[] {
   return out;
 }
 
-export type FetchAllResult = { events: RawEvent[]; failed: number; total: number; reason?: string };
+/** `note` is a ready-made message for something that is not a failure, such as a capped fetch. */
+export type FetchAllResult = {
+  events: RawEvent[];
+  failed: number;
+  total: number;
+  reason?: string;
+  note?: string;
+};
 
 /**
  * Fetch several listing pages and merge, so one 404 never loses the rest.

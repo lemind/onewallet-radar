@@ -71,9 +71,11 @@ export default function Map({ events }: { events: Event[] }) {
   // One marker per venue, not per event: two events at the same place stack
   // exactly on top of each other and the second is invisible. Grouping also
   // surfaces the repeat venues, which are the stronger leads.
+  // HACK(allevents): the venue is part of the key because sources stamp the city-centre coordinate on anything they cannot geocode, so one point can hold several unrelated venues. Measured 26 Sep, Bangkok.
+  // REVISIT: key on the coordinate alone once no source falls back to a city centre.
   const byPlace: Record<string, Event[]> = {};
   for (const e of pins) {
-    const key = `${e.lat!.toFixed(5)},${e.lng!.toFixed(5)}`;
+    const key = `${e.lat!.toFixed(5)},${e.lng!.toFixed(5)}|${e.venue ?? ""}|${e.address ?? ""}`;
     (byPlace[key] ??= []).push(e);
   }
   const venues = Object.values(byPlace);

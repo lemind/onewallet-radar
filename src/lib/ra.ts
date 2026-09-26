@@ -68,7 +68,7 @@ function inCity(e: RaEvent, city: CityId): boolean {
   return CITY_MATCH[city].test(hay);
 }
 
-type Page = { rows: number; events: RaEvent[] };
+type Page = { rows: number; total: number; events: RaEvent[] };
 
 async function page(from: string, to: string, n: number, signal?: AbortSignal): Promise<Page> {
   const res = await fetch(ENDPOINT, {
@@ -91,9 +91,13 @@ async function page(from: string, to: string, n: number, signal?: AbortSignal): 
       query: QUERY,
     }),
   });
-  if (!res.ok) throw new Error(`ra.co returned ${res.status}`);
+  if (!res.ok) {
+    // undici holds the socket out of the pool until the body is read or cancelled.
+    await res.body?.cancel().catch(() => {});
+    throw new Error(`ra.co returned ${res.status}`);
+  }
   const body = (await res.json()) as {
-    data?: { eventListings?: { data?: { event?: RaEvent }[] } };
+    data?: { eventListings?: { data?: { event?: RaEvent }[]; totalResults?: number } };
     errors?: unknown[];
   };
   if (body.errors?.length) {
@@ -101,8 +105,13 @@ async function page(from: string, to: string, n: number, signal?: AbortSignal): 
     const first = body.errors[0] as { message?: string } | undefined;
     throw new Error(`ra.co rejected the query${first?.message ? `: ${first.message}` : ""}`);
   }
-  const rows = body.data?.eventListings?.data ?? [];
-  return { rows: rows.length, events: rows.map((r) => r.event).filter(Boolean) as RaEvent[] };
+  const listings = body.data?.eventListings;
+  const rows = listings?.data ?? [];
+  return {
+    rows: rows.length,
+    total: listings?.totalResults ?? 0,
+    events: rows.map((r) => r.event).filter(Boolean) as RaEvent[],
+  };
 }
 
 /**
@@ -119,11 +128,13 @@ export async function fetchRa(
   const lte = toLocal(to, "date");
   const events: RawEvent[] = [];
   let reason: string | undefined;
-  let done = false;
-  let n = 1;
+  let seen = 0;
+  let total = 0;
+  let attempted = 0;
 
-  for (; n <= MAX_PAGES && !done; n++) {
+  for (let n = 1; n <= MAX_PAGES; n++) {
     let batch: Page;
+    attempted = n;
     try {
       batch = await page(gte, lte, n, signal);
     } catch (err) {
@@ -134,13 +145,16 @@ export async function fetchRa(
       break;
     }
     for (const e of batch.events) if (inCity(e, city)) events.push(toSchemaOrg(e));
-    // Count rows RA returned, not rows that survived parsing, or one dropped
-    // row would read as the last page and the remaining pages go unfetched.
-    if (batch.rows < PAGE_SIZE) done = true;
+    seen += batch.rows;
+    total = batch.total;
+    // RA reports the full count, so "is there more" is exact. Counting rows
+    // returned rather than rows parsed keeps a dropped row from ending paging.
+    if (batch.rows < PAGE_SIZE || seen >= total) break;
   }
 
-  // Hitting the cap with a full page means RA had more to give; say so rather
-  // than let a truncated range look like a complete one.
-  if (!done && !reason) reason = `stopped at the first ${MAX_PAGES * PAGE_SIZE} listings`;
-  return { events, failed: reason ? 1 : 0, total: MAX_PAGES, reason };
+  // Everything asked for arrived; there was simply more than the cap allows.
+  // That is not a failure, so it must not be reported through `failed`.
+  const note =
+    !reason && total > seen ? `showing the first ${seen} of ${total} listings` : undefined;
+  return { events, failed: reason ? 1 : 0, total: attempted, reason, note };
 }
