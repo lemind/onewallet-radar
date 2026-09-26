@@ -60,10 +60,6 @@ export const metadata: Metadata = {
   creator: BRAND,
   publisher: BRAND,
   alternates: { canonical: "/" },
-  // Set GOOGLE_SITE_VERIFICATION in Vercel to verify the property; unset, no tag is emitted.
-  verification: process.env.GOOGLE_SITE_VERIFICATION
-    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
-    : undefined,
   openGraph: {
     type: "website",
     siteName: SHORT_TITLE,
