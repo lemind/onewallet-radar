@@ -144,6 +144,16 @@ export default function Page() {
         </>
       )}
 
+      <nav className="citynav">
+        Browse what's on:{" "}
+        {CITIES.map((c, i) => (
+          <span key={c.id}>
+            {i > 0 && " · "}
+            <a href={`/events/${c.id}`}>Events in {c.label}</a>
+          </span>
+        ))}
+      </nav>
+
       <footer className="foot">
         A lead finder for{" "}
         <a href={BRAND_SITE} target="_blank" rel="noreferrer">
