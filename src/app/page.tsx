@@ -58,9 +58,12 @@ export default function Page() {
       <div className="brand">
         {/* Wordmark is 108x20; height is set in CSS so it scales with the header. */}
         <img src="/logo.svg" alt="One Wallet" width={108} height={20} />
-        <h1>Radar</h1>
+        {/* The wordmark carries "One Wallet" visually; the heading has to say it in text too. */}
+        <h1><span className="vh">One Wallet </span>Radar</h1>
       </div>
-      <p className="sub">Upcoming events in Thai cities, and the venues and organizers behind them.</p>
+      <p className="sub">
+        Upcoming events in Bangkok, Chiang Mai and Phuket, and the venues and organizers behind them.
+      </p>
 
       <form onSubmit={run}>
         <label>

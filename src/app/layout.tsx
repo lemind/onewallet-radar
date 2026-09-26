@@ -9,9 +9,15 @@ const BRAND_SITE = "https://onewallet.co.th/";
 // the searches that matter are city-qualified ("events in Chiang Mai").
 const CITIES = ["Bangkok", "Chiang Mai", "Phuket"];
 
-const TITLE = `${BRAND} Radar — Event, Venue and Organizer Leads in Bangkok, Chiang Mai and Phuket`;
+// Title and description are kept inside what search results actually show:
+// roughly 60 and 160 characters. The longer wording lives in the OG tags,
+// which are rendered by social cards rather than truncated by Google.
+const TITLE = `${BRAND} Radar — Events in Bangkok, Chiang Mai, Phuket`;
 const SHORT_TITLE = `${BRAND} Radar`;
 const DESCRIPTION =
+  "Upcoming events in Bangkok, Chiang Mai and Phuket, with the venues and " +
+  "organizers behind them: concerts, club nights, festivals and meetups.";
+const SOCIAL_DESCRIPTION =
   "Find upcoming events in Bangkok, Chiang Mai and Phuket, and the venues, promoters and " +
   "organizers behind them. Concerts, club nights, festivals, workshops, exhibitions, markets " +
   `and meetups, with dates, addresses and a map, exportable as a spreadsheet. Built for ${BRAND}.`;
@@ -53,11 +59,11 @@ export const metadata: Metadata = {
     type: "website",
     siteName: SHORT_TITLE,
     title: TITLE,
-    description: DESCRIPTION,
+    description: SOCIAL_DESCRIPTION,
     url: SITE,
     locale: "en_US",
   },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
+  twitter: { card: "summary_large_image", title: TITLE, description: SOCIAL_DESCRIPTION },
   robots: {
     index: true,
     follow: true,
@@ -97,7 +103,7 @@ const LD_JSON = {
       "@id": `${SITE}/#app`,
       name: SHORT_TITLE,
       url: SITE,
-      description: DESCRIPTION,
+      description: SOCIAL_DESCRIPTION,
       applicationCategory: "BusinessApplication",
       operatingSystem: "Any",
       inLanguage: "en",
