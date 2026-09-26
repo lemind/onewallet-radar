@@ -30,6 +30,7 @@ export type DroppedCounts = {
   noDate: number;
   outOfRange: number;
   duplicate: number;
+  farAway: number;
 };
 
 export type SourceError = { source: Source; message: string };

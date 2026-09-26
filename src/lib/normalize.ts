@@ -73,6 +73,21 @@ function canonicalUrl(u: string): string {
   }
 }
 
+// HACK(allevents): the city page carries the surrounding region and stamps ", Chiang Mai, CM" on every address, so a Pai retreat 85km away reads as local. Measured 26 Sep.
+// REVISIT: drop if allevents ever files events under their own province.
+const RADIUS_KM = 40;
+
+/** Great-circle distance, used only to reject a listing filed under the wrong city. */
+function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const r = Math.PI / 180;
+  const dLat = (bLat - aLat) * r;
+  const dLng = (bLng - aLng) * r;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(aLat * r) * Math.cos(bLat * r) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+
 export type Normalized = { event: Event; online: boolean; start: Date | null };
 
 export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized {
@@ -120,9 +135,9 @@ export type FilterResult = { events: Event[]; dropped: DroppedCounts };
  */
 export function filterEvents(
   raws: { raw: RawEvent; source: Source }[],
-  opts: { now: Date; to: Date },
+  opts: { now: Date; to: Date; centre?: { lat: number; lng: number } },
 ): FilterResult {
-  const dropped: DroppedCounts = { online: 0, noVenue: 0, noDate: 0, outOfRange: 0, duplicate: 0 };
+  const dropped: DroppedCounts = { online: 0, noVenue: 0, noDate: 0, outOfRange: 0, duplicate: 0, farAway: 0 };
   const seen = new Set<string>();
   const kept: { e: Event; t: number }[] = [];
 
@@ -134,6 +149,13 @@ export function filterEvents(
     // A lead needs somewhere to go: a venue, an address, or a named organizer.
     if (!event.venue && !event.address && !event.organizer) { dropped.noVenue++; continue; }
     if (!start) { dropped.noDate++; continue; }
+    // Only coordinates can prove a listing is out of town; an address cannot,
+    // because the source appends the city name whatever the venue really is.
+    if (opts.centre && event.lat != null && event.lng != null &&
+        distanceKm(opts.centre.lat, opts.centre.lng, event.lat, event.lng) > RADIUS_KM) {
+      dropped.farAway++;
+      continue;
+    }
     // A date-only event covers its whole day, so compare against its end of day
     // or a same-day listing would be dropped the moment the clock passed midnight.
     const upper = event.startPrecision === "date"

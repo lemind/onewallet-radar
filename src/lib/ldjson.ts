@@ -55,13 +55,15 @@ export async function fetchHtml(url: string, signal?: AbortSignal): Promise<stri
   return res.text();
 }
 
-/** Cloudflare challenges a share of otherwise identical requests, so one 403 is not a verdict. */
+// One retry only. Measured 26 Sep: bandsintown serves roughly five requests
+// then rate-limits, so a burst of retries burns the budget instead of clearing
+// it. A run asks each host once, which is well inside the limit.
 async function fetchHtmlRetrying(url: string, signal?: AbortSignal): Promise<string> {
   try {
     return await fetchHtml(url, signal);
   } catch (err) {
     if (signal?.aborted || !/returned 403/.test(String(err))) throw err;
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 1200));
     return fetchHtml(url, signal);
   }
 }
