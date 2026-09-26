@@ -8,7 +8,7 @@
   /* Brand orange, matching the logo on onewallet.co.th. */
   --brand: #ff5c00;
   --brand-hover: #e64f00;
-  /* White on #ff5b00 is 3.1:1 — fine for a bold button label, too low for body
+  /* White on #ff5c00 is 3.1:1 — fine for a bold button label, too low for body
      text, so links use a darker shade that clears 5:1 on the light ground. */
   --accent: #c2410c;
 }

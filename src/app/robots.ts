@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const SITE = "https://onewallet-radar.vercel.app";
+import { SITE } from "../lib/site.ts";
 
 export default function robots(): MetadataRoute.Robots {
   return {

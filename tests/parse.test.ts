@@ -262,7 +262,7 @@ test("rejects a venue outside the city, however the source labels it", () => {
   const opts = {
     now: new Date("2026-09-26T00:00:00+07:00"),
     to: new Date("2026-10-03T23:59:59+07:00"),
-    centre: { lat: 18.7883, lng: 98.9853 },
+    centre: { lat: 18.7883, lng: 98.9853, radiusKm: 75 },
   };
   const out = filterEvents([{ raw: pai, source: "allevents" }], opts);
   assert.equal(out.events.length, 0);

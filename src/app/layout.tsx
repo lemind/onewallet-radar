@@ -1,9 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-
-const SITE = "https://onewallet-radar.vercel.app";
-const BRAND = "One Wallet";
-const BRAND_SITE = "https://onewallet.co.th/";
+import { BRAND, BRAND_SITE, SITE } from "../lib/site.ts";
 
 // Cities the tool actually covers. Naming them beats a generic "Thailand":
 // the searches that matter are city-qualified ("events in Chiang Mai").
@@ -15,10 +12,10 @@ const CITIES = ["Bangkok", "Chiang Mai", "Phuket"];
 const TITLE = `${BRAND} Radar — Events in Bangkok, Chiang Mai, Phuket`;
 const SHORT_TITLE = `${BRAND} Radar`;
 const DESCRIPTION =
-  "Upcoming events in Bangkok, Chiang Mai and Phuket, with the venues and " +
-  "organizers behind them: concerts, club nights, festivals and meetups.";
+  "Event radar for Bangkok, Chiang Mai and Phuket: upcoming events with the " +
+  "venues and organizers behind them, from club nights to festivals.";
 const SOCIAL_DESCRIPTION =
-  "Find upcoming events in Bangkok, Chiang Mai and Phuket, and the venues, promoters and " +
+  "An event radar for Bangkok, Chiang Mai and Phuket: upcoming events, and the venues, promoters and " +
   "organizers behind them. Concerts, club nights, festivals, workshops, exhibitions, markets " +
   `and meetups, with dates, addresses and a map, exportable as a spreadsheet. Built for ${BRAND}.`;
 
@@ -49,7 +46,13 @@ export const metadata: Metadata = {
     "workshops Chiang Mai",
     "networking events Bangkok",
     "partner leads",
+    "event radar",
+    "Thailand event radar",
+    "Bangkok event radar",
+    "Chiang Mai event radar",
+    "radar",
     BRAND,
+    SHORT_TITLE,
   ],
   authors: [{ name: BRAND, url: BRAND_SITE }],
   creator: BRAND,

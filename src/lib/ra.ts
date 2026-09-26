@@ -68,7 +68,9 @@ function inCity(e: RaEvent, city: CityId): boolean {
   return CITY_MATCH[city].test(hay);
 }
 
-async function page(from: string, to: string, n: number, signal?: AbortSignal): Promise<RaEvent[]> {
+type Page = { rows: number; events: RaEvent[] };
+
+async function page(from: string, to: string, n: number, signal?: AbortSignal): Promise<Page> {
   const res = await fetch(ENDPOINT, {
     method: "POST",
     signal,
@@ -94,8 +96,13 @@ async function page(from: string, to: string, n: number, signal?: AbortSignal): 
     data?: { eventListings?: { data?: { event?: RaEvent }[] } };
     errors?: unknown[];
   };
-  if (body.errors?.length) throw new Error("ra.co rejected the query");
-  return (body.data?.eventListings?.data ?? []).map((r) => r.event).filter(Boolean) as RaEvent[];
+  if (body.errors?.length) {
+    // Keep RA's own message: a renamed field and a block are different problems.
+    const first = body.errors[0] as { message?: string } | undefined;
+    throw new Error(`ra.co rejected the query${first?.message ? `: ${first.message}` : ""}`);
+  }
+  const rows = body.data?.eventListings?.data ?? [];
+  return { rows: rows.length, events: rows.map((r) => r.event).filter(Boolean) as RaEvent[] };
 }
 
 /**
@@ -111,10 +118,29 @@ export async function fetchRa(
   const gte = toLocal(from, "date");
   const lte = toLocal(to, "date");
   const events: RawEvent[] = [];
-  for (let n = 1; n <= MAX_PAGES; n++) {
-    const batch = await page(gte, lte, n, signal);
-    for (const e of batch) if (inCity(e, city)) events.push(toSchemaOrg(e));
-    if (batch.length < PAGE_SIZE) break;
+  let reason: string | undefined;
+  let done = false;
+  let n = 1;
+
+  for (; n <= MAX_PAGES && !done; n++) {
+    let batch: Page;
+    try {
+      batch = await page(gte, lte, n, signal);
+    } catch (err) {
+      // Keep the pages already fetched: a later page failing is a short result,
+      // not an empty one. Matches fetchAll, which never discards what it has.
+      if (n === 1) throw err;
+      reason = err instanceof Error ? err.message : String(err);
+      break;
+    }
+    for (const e of batch.events) if (inCity(e, city)) events.push(toSchemaOrg(e));
+    // Count rows RA returned, not rows that survived parsing, or one dropped
+    // row would read as the last page and the remaining pages go unfetched.
+    if (batch.rows < PAGE_SIZE) done = true;
   }
-  return { events, failed: 0, total: 1 };
+
+  // Hitting the cap with a full page means RA had more to give; say so rather
+  // than let a truncated range look like a complete one.
+  if (!done && !reason) reason = `stopped at the first ${MAX_PAGES * PAGE_SIZE} listings`;
+  return { events, failed: reason ? 1 : 0, total: MAX_PAGES, reason };
 }

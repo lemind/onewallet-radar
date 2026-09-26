@@ -51,8 +51,25 @@ export async function fetchHtml(url: string, signal?: AbortSignal): Promise<stri
       "Upgrade-Insecure-Requests": "1",
     },
   });
-  if (!res.ok) throw new Error(`${new URL(url).hostname} returned ${res.status}`);
+  if (!res.ok) {
+    // undici holds the socket out of the pool until the body is read or cancelled.
+    await res.body?.cancel().catch(() => {});
+    throw new Error(`${new URL(url).hostname} returned ${res.status}`);
+  }
   return res.text();
+}
+
+/** Abortable so the route's deadline is not held open by a pending timer. */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const t = setTimeout(done, ms);
+    function done() {
+      clearTimeout(t);
+      signal?.removeEventListener("abort", done);
+      resolve();
+    }
+    signal?.addEventListener("abort", done, { once: true });
+  });
 }
 
 // One retry only. Measured 26 Sep: bandsintown serves roughly five requests
@@ -63,7 +80,8 @@ async function fetchHtmlRetrying(url: string, signal?: AbortSignal): Promise<str
     return await fetchHtml(url, signal);
   } catch (err) {
     if (signal?.aborted || !/returned 403/.test(String(err))) throw err;
-    await new Promise((r) => setTimeout(r, 1200));
+    await sleep(1200, signal);
+    if (signal?.aborted) throw err;
     return fetchHtml(url, signal);
   }
 }

@@ -75,7 +75,6 @@ function canonicalUrl(u: string): string {
 
 // HACK(allevents): the city page carries the surrounding region and stamps ", Chiang Mai, CM" on every address, so a Pai retreat 85km away reads as local. Measured 26 Sep.
 // REVISIT: drop if allevents ever files events under their own province.
-const RADIUS_KM = 40;
 
 /** Great-circle distance, used only to reject a listing filed under the wrong city. */
 function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
@@ -93,8 +92,8 @@ export type Normalized = { event: Event; online: boolean; start: Date | null };
 export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized {
   const { venue, address } = flatAddress(raw.location);
   const { lat, lng } = geoOf(pickPlace(raw.location));
-  // HACK(bandsintown): organizer repeats the performer, so the column would name a touring act rather than a partner to call. The venue is the lead and is published on every row; the artist is already in the event name.
-  // REVISIT: keep it if bandsintown ever publishes the promoter there.
+  // HACK(bandsintown): organizer repeats the performer, naming a touring act rather than a partner to call. Parked: the source is commented out in sources.ts.
+  // REVISIT: keep the organizer if bandsintown ever publishes the promoter there.
   const org =
     source === "bandsintown"
       ? undefined
@@ -116,12 +115,9 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
       online: isOnline(raw.eventAttendanceMode),
       lat,
       lng,
-      organizer:
-        org && typeof org === "object"
-          ? str(org.name)
-          : source === "bandsintown"
-            ? null
-            : str(raw.organizer),
+      // str(org), not str(raw.organizer): first() already unwrapped the array, and
+      // an array reaching str() is rejected, losing the organizer and the lead.
+      organizer: org && typeof org === "object" ? str(org.name) : str(org),
       organizerUrl: org && typeof org === "object" ? str(org.url) : null,
     },
   };
@@ -130,12 +126,12 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
 export type FilterResult = { events: Event[]; dropped: DroppedCounts };
 
 /**
- * Apply the five filter rules, dedupe, and sort chronologically.
+ * Apply the filter rules, dedupe, and sort chronologically.
  * `now` is injected so tests are deterministic against a saved fixture.
  */
 export function filterEvents(
   raws: { raw: RawEvent; source: Source }[],
-  opts: { now: Date; to: Date; centre?: { lat: number; lng: number } },
+  opts: { now: Date; to: Date; centre?: { lat: number; lng: number; radiusKm: number } },
 ): FilterResult {
   const dropped: DroppedCounts = { online: 0, noVenue: 0, noDate: 0, outOfRange: 0, duplicate: 0, farAway: 0 };
   const seen = new Set<string>();
@@ -152,7 +148,7 @@ export function filterEvents(
     // Only coordinates can prove a listing is out of town; an address cannot,
     // because the source appends the city name whatever the venue really is.
     if (opts.centre && event.lat != null && event.lng != null &&
-        distanceKm(opts.centre.lat, opts.centre.lng, event.lat, event.lng) > RADIUS_KM) {
+        distanceKm(opts.centre.lat, opts.centre.lng, event.lat, event.lng) > opts.centre.radiusKm) {
       dropped.farAway++;
       continue;
     }

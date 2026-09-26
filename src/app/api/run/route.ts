@@ -79,7 +79,7 @@ export async function GET(req: Request) {
     const { events, dropped } = filterEvents(raws, {
       now: lower,
       to: toDate,
-      centre: { lat: city.lat, lng: city.lng },
+      centre: { lat: city.lat, lng: city.lng, radiusKm: city.radiusKm },
     });
     const body: RunResult = {
       city: city.id,
