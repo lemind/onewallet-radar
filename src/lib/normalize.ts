@@ -6,8 +6,10 @@ function str(v: unknown): string | null {
   return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
 }
 
+/** First entry that carries something usable: a bare v[0] can be null and lose the rest. */
 function first<T>(v: T | T[] | undefined): T | undefined {
-  return Array.isArray(v) ? v[0] : v;
+  if (!Array.isArray(v)) return v;
+  return v.find((x) => typeof x === "string" ? x.trim() !== "" : !!x && !!(x as { name?: unknown }).name) ?? v[0];
 }
 
 /** Pick the entry that actually names a place; a hybrid event can list VirtualLocation first. */
@@ -73,12 +75,31 @@ function canonicalUrl(u: string): string {
   }
 }
 
+// HACK(allevents): the city page carries the surrounding region and stamps ", Chiang Mai, CM" on every address, so a Pai retreat 85km away reads as local. Measured 26 Sep. Radius per city in cities.ts.
+// REVISIT: drop this and the radiusKm field if allevents ever files events under their own province.
+/** Great-circle distance, used only to reject a listing filed under the wrong city. */
+function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const r = Math.PI / 180;
+  const dLat = (bLat - aLat) * r;
+  const dLng = (bLng - aLng) * r;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(aLat * r) * Math.cos(bLat * r) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+
 export type Normalized = { event: Event; online: boolean; start: Date | null };
 
 export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized {
   const { venue, address } = flatAddress(raw.location);
   const { lat, lng } = geoOf(pickPlace(raw.location));
-  const org = first(raw.organizer as Record<string, unknown> | Record<string, unknown>[]);
+  // HACK(bandsintown): organizer repeats the performer, naming a touring act rather than a partner to call. Parked: the source is commented out in sources.ts.
+  // REVISIT: keep the organizer if bandsintown ever publishes the promoter there.
+  const org =
+    source === "bandsintown"
+      ? undefined
+      : first(raw.organizer as Record<string, unknown> | Record<string, unknown>[]);
+  const orgName = org && typeof org === "object" ? str(org.name) : str(org);
   const parsed = parseStart(raw.startDate);
   return {
     online: isOnline(raw.eventAttendanceMode),
@@ -96,8 +117,12 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
       online: isOnline(raw.eventAttendanceMode),
       lat,
       lng,
-      organizer: org && typeof org === "object" ? str(org.name) : str(raw.organizer),
-      organizerUrl: org && typeof org === "object" ? str(org.url) : null,
+      // str(org), not str(raw.organizer): first() already unwrapped the array, and
+      // an array reaching str() is rejected, losing the organizer and the lead.
+      organizer: orgName,
+      // Name and link move together: a link with no name beside it is the
+      // partial fill SPEC.md 9.9 forbids, and renders as an empty anchor.
+      organizerUrl: orgName && org && typeof org === "object" ? str(org.url) : null,
     },
   };
 }
@@ -105,14 +130,14 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
 export type FilterResult = { events: Event[]; dropped: DroppedCounts };
 
 /**
- * Apply the five filter rules, dedupe, and sort chronologically.
+ * Apply the filter rules, dedupe, and sort chronologically.
  * `now` is injected so tests are deterministic against a saved fixture.
  */
 export function filterEvents(
   raws: { raw: RawEvent; source: Source }[],
-  opts: { now: Date; to: Date },
+  opts: { now: Date; to: Date; centre?: { lat: number; lng: number; radiusKm: number } },
 ): FilterResult {
-  const dropped: DroppedCounts = { online: 0, noVenue: 0, noDate: 0, outOfRange: 0, duplicate: 0 };
+  const dropped: DroppedCounts = { online: 0, noVenue: 0, noDate: 0, outOfRange: 0, duplicate: 0, farAway: 0 };
   const seen = new Set<string>();
   const kept: { e: Event; t: number }[] = [];
 
@@ -130,6 +155,14 @@ export function filterEvents(
       ? new Date(start.getTime() + 86_400_000 - 1)
       : start;
     if (upper < opts.now || start > opts.to) { dropped.outOfRange++; continue; }
+    // After the date test, so farAway counts only events that were otherwise
+    // keepers. Only coordinates can prove a listing is out of town; an address
+    // cannot, because the source appends the city name whatever the venue is.
+    if (opts.centre && event.lat != null && event.lng != null &&
+        distanceKm(opts.centre.lat, opts.centre.lng, event.lat, event.lng) > opts.centre.radiusKm) {
+      dropped.farAway++;
+      continue;
+    }
     // Include the raw start and end: date-only sources give every session of a
     // day the same instant, so startUtc alone would collapse distinct sittings.
     const key = [

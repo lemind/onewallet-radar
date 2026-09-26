@@ -322,3 +322,4 @@ Bangkok already passes 78 over three months without it.
 - [ ] T063 Show a message when the map fails to load, rather than a blank box under a caption claiming pins
 - [ ] T064 Remove the Leaflet instance on unmount
 - [ ] T065 Count line reads "N on the map from M found" — drop the date-range and duplicate breakdowns, which are noise
+- [x] T066 Add allevents.in as a fourth source — wrongly rejected in v0.2 on a bad URL; the city page carries 40 Chiang Mai events, all with venue, address and coordinates, and reaches Thai-language venues. Chiang Mai 15 to 24 leads, 3 to 12 map locations

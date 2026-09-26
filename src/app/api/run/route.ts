@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { findCity } from "../../../lib/cities.ts";
-import { fetchAll, type RawEvent } from "../../../lib/ldjson.ts";
-import { SOURCES, urlsFor } from "../../../lib/sources.ts";
-import { filterEvents } from "../../../lib/normalize.ts";
-import type { RunResult, SourceError, Source } from "../../../types.ts";
+import { AllDown, MeetupDown, runCity } from "../../../lib/run.ts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -24,63 +21,15 @@ export async function GET(req: Request) {
   }
   if (toDate < fromDate) return NextResponse.json({ error: "to is before from" }, { status: 400 });
 
-  // A past `from` is clamped to now: nobody is prospecting an event that already happened.
-  const now = new Date();
-  const lower = fromDate > now ? fromDate : now;
-
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), 45_000);
-
-  const active = SOURCES.map((s) => ({ id: s.id, urls: urlsFor(s.id, city.id) })).filter(
-    (s) => s.urls.length > 0,
-  );
-
   try {
-    const settled = await Promise.allSettled(active.map((s) => fetchAll(s.urls, ac.signal)));
-    const raws: { raw: RawEvent; source: Source }[] = [];
-    const errors: SourceError[] = [];
-
-    let meetupDown = false;
-    settled.forEach((r, i) => {
-      const source = active[i].id;
-      if (r.status === "fulfilled") {
-        for (const raw of r.value.events) raws.push({ raw, source });
-        // A source that answered on some of its pages returned a truncated list.
-        // Saying so is the difference between a short week and a broken scrape.
-        if (r.value.failed > 0) {
-          errors.push({
-            source,
-            message: `${r.value.failed} of ${r.value.total} listing pages failed (${r.value.reason})`,
-          });
-        }
-      } else {
-        const message = r.reason instanceof Error ? r.reason.message : String(r.reason);
-        errors.push({ source, message });
-        if (source === "meetup") meetupDown = true;
-      }
-    });
-
-    // Meetup is the only source carrying organizers, so losing it is not a
-    // degraded result — it is a different, much worse product pretending to work.
-    const allDown = settled.every((r) => r.status === "rejected");
-    if (allDown || meetupDown) {
-      return NextResponse.json(
-        { error: allDown ? "no source could be reached" : "meetup unreachable", events: [], errors },
-        { status: 502 },
-      );
+    return NextResponse.json(await runCity(city.id, from, to, ac.signal));
+  } catch (err) {
+    if (err instanceof AllDown || err instanceof MeetupDown) {
+      return NextResponse.json({ error: err.message, events: [], errors: [] }, { status: 502 });
     }
-
-    const { events, dropped } = filterEvents(raws, { now: lower, to: toDate });
-    const body: RunResult = {
-      city: city.id,
-      from,
-      to,
-      fetchedAt: new Date().toISOString(),
-      events,
-      dropped,
-      errors,
-    };
-    return NextResponse.json(body);
+    throw err;
   } finally {
     clearTimeout(timer);
   }

@@ -233,3 +233,40 @@ test("coordinates come from the same entry as the venue name", () => {
   assert.equal(e.venue, "Nimman Coworking");
   assert.equal(e.lat, null, "must not borrow the other entry's pin");
 });
+
+test("extracts Event subtypes, not just a bare Event", () => {
+  const html = `<script type="application/ld+json">${JSON.stringify([
+    { "@type": "MusicEvent", name: "Gig", startDate: "2026-09-27T18:30:00" },
+    { "@type": "https://schema.org/TheaterEvent", name: "Play", startDate: "2026-09-28T19:00:00" },
+    { "@type": "Organization", name: "Not an event" },
+  ])}</script>`;
+  assert.deepEqual(
+    extractEvents(html).map((e) => e.name),
+    ["Gig", "Play"],
+  );
+});
+
+test("rejects a venue outside the city, however the source labels it", () => {
+  const pai = {
+    "@type": "Event",
+    name: "Retreat in Pai",
+    startDate: "2026-09-28T10:00:00+07:00",
+    location: {
+      "@type": "Place",
+      name: "The Nest Pai",
+      // allevents stamps the city on every address, so only the geo gives it away.
+      address: "Pai, Mae Hong Son, Chiang Mai, CM",
+      geo: { latitude: 19.3583, longitude: 98.4406 },
+    },
+  };
+  const opts = {
+    now: new Date("2026-09-26T00:00:00+07:00"),
+    to: new Date("2026-10-03T23:59:59+07:00"),
+    centre: { lat: 18.7883, lng: 98.9853, radiusKm: 75 },
+  };
+  const out = filterEvents([{ raw: pai, source: "allevents" }], opts);
+  assert.equal(out.events.length, 0);
+  assert.equal(out.dropped.farAway, 1);
+  // Without a centre the same event is kept: the rule is opt-in, not a silent global.
+  assert.equal(filterEvents([{ raw: pai, source: "allevents" }], { now: opts.now, to: opts.to }).events.length, 1);
+});

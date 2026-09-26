@@ -31,6 +31,31 @@ export const SOURCES: {
     id: "luma",
     urls: { bangkok: ["https://luma.com/bangkok"] },
   },
+  {
+    // The city page carries the events; its category sub-pages repeat the same
+    // set, so one fetch per city is enough. Measured 25 Sep: Chiang Mai 40,
+    // Bangkok 65, Phuket 13, all with venue, address and coordinates.
+    id: "allevents",
+    urls: {
+      "chiang-mai": ["https://allevents.in/chiang-mai/"],
+      bangkok: ["https://allevents.in/bangkok/"],
+      phuket: ["https://allevents.in/phuket/"],
+    },
+  },
+  // Bandsintown is off, not deleted. It works from a home connection and adds
+  // real live music — measured 26 Sep: Chiang Mai 14, Bangkok 36, Phuket 12 —
+  // but Cloudflare answers Vercel's datacenter IP with a block on every
+  // request, so enabling it only puts a permanent warning on a working page.
+  // Uncomment to switch it back on if the block ever lifts; the parsing,
+  // headers and TLS handling for it are all still in place.
+  // {
+  //   id: "bandsintown",
+  //   urls: {
+  //     "chiang-mai": ["https://www.bandsintown.com/c/chiang-mai-thailand"],
+  //     bangkok: ["https://www.bandsintown.com/c/bangkok-thailand"],
+  //     phuket: ["https://www.bandsintown.com/c/phuket-thailand"],
+  //   },
+  // },
 ];
 
 function ebPaths(slug: string): string[] {

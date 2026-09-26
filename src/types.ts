@@ -1,6 +1,6 @@
 export type CityId = "chiang-mai" | "bangkok" | "phuket";
 
-export type Source = "meetup" | "eventbrite" | "luma";
+export type Source = "meetup" | "eventbrite" | "luma" | "allevents" | "bandsintown" | "ra";
 
 export type Event = {
   source: Source;
@@ -30,6 +30,7 @@ export type DroppedCounts = {
   noDate: number;
   outOfRange: number;
   duplicate: number;
+  farAway: number;
 };
 
 export type SourceError = { source: Source; message: string };

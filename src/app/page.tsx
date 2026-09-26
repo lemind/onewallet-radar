@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CITIES } from "../lib/cities.ts";
 import { toCsv, filename } from "../lib/csv.ts";
+import { BRAND, BRAND_SITE } from "../lib/site.ts";
 import type { RunResult } from "../types.ts";
 import Map from "./Map.tsx";
 
@@ -58,9 +59,12 @@ export default function Page() {
       <div className="brand">
         {/* Wordmark is 108x20; height is set in CSS so it scales with the header. */}
         <img src="/logo.svg" alt="One Wallet" width={108} height={20} />
-        <h1>Radar</h1>
+        {/* The wordmark carries "One Wallet" visually; the heading has to say it in text too. */}
+        <h1><span className="vh">One Wallet </span>Radar</h1>
       </div>
-      <p className="sub">Upcoming events in Thai cities, and the venues and organizers behind them.</p>
+      <p className="sub">
+        Upcoming events in Bangkok, Chiang Mai and Phuket, and the venues and organizers behind them.
+      </p>
 
       <form onSubmit={run}>
         <label>
@@ -139,6 +143,24 @@ export default function Page() {
           </div>
         </>
       )}
+
+      <nav className="citynav">
+        Browse what's on:{" "}
+        {CITIES.map((c, i) => (
+          <span key={c.id}>
+            {i > 0 && " · "}
+            <a href={`/events/${c.id}`}>Events in {c.label}</a>
+          </span>
+        ))}
+      </nav>
+
+      <footer className="foot">
+        A lead finder for{" "}
+        <a href={BRAND_SITE} target="_blank" rel="noreferrer">
+          {BRAND}
+        </a>
+        .
+      </footer>
     </main>
   );
 }
