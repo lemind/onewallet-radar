@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CITIES, findCity } from "../../../lib/cities.ts";
+import { CITY_COPY } from "../../../lib/city-copy.ts";
 import { runCity } from "../../../lib/run.ts";
 import { SITE, BRAND, BRAND_SITE } from "../../../lib/site.ts";
 import { toLocal } from "../../../lib/time.ts";
@@ -90,6 +91,7 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
   const venues = [...new Set(events.map((e) => e.venue).filter(Boolean))] as string[];
   const organizers = [...new Set(events.map((e) => e.organizer).filter(Boolean))] as string[];
   const others = CITIES.filter((c) => c.id !== city.id);
+  const copy = CITY_COPY[city.id];
 
   const ld = {
     "@context": "https://schema.org",
@@ -138,6 +140,13 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
         <strong>{organizers.length}</strong> {organizers.length === 1 ? "organizer" : "organizers"}.{" "}
         <Link href="/">Search other dates</Link>.
       </p>
+
+      <h2>What the {city.label} event scene looks like</h2>
+      <p>{copy.intro}</p>
+      <p>{copy.scene}</p>
+
+      <h2>When {city.label} is busiest</h2>
+      <p>{copy.when}</p>
 
       <h2>Upcoming events in {city.label}</h2>
       {events.length === 0 ? (

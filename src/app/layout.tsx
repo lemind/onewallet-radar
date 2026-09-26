@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { BRAND, BRAND_SITE, SITE } from "../lib/site.ts";
 
@@ -58,6 +60,10 @@ export const metadata: Metadata = {
   creator: BRAND,
   publisher: BRAND,
   alternates: { canonical: "/" },
+  // Set GOOGLE_SITE_VERIFICATION in Vercel to verify the property; unset, no tag is emitted.
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
   openGraph: {
     type: "website",
     siteName: SHORT_TITLE,
@@ -127,6 +133,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         {children}
+        <Analytics />
+        <SpeedInsights />
         <script
           type="application/ld+json"
           // Serialised from a literal above, so there is no untrusted input to escape.
