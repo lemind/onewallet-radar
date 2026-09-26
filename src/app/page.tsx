@@ -139,6 +139,14 @@ export default function Page() {
           </div>
         </>
       )}
+
+      <footer className="foot">
+        A lead finder for{" "}
+        <a href="https://onewallet.co.th/" target="_blank" rel="noreferrer">
+          One Wallet
+        </a>
+        .
+      </footer>
     </main>
   );
 }

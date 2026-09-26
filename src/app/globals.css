@@ -5,8 +5,8 @@
   --muted: #6b6b6b;
   --line: #e2e0dc;
   --card: #ffffff;
-  /* Brand orange, taken from the logo. */
-  --brand: #ff5b00;
+  /* Brand orange, matching the logo on onewallet.co.th. */
+  --brand: #ff5c00;
   --brand-hover: #e64f00;
   /* White on #ff5b00 is 3.1:1 — fine for a bold button label, too low for body
      text, so links use a darker shade that clears 5:1 on the light ground. */
@@ -110,3 +110,12 @@ a { color: var(--accent); }
   label, select, input[type="date"], button { width: 100%; min-width: 0; }
   th, td { padding: 8px 10px; }
 }
+
+.foot {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+.foot a { color: var(--accent); }
