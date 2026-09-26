@@ -42,6 +42,17 @@ export const SOURCES: {
       phuket: ["https://allevents.in/phuket/"],
     },
   },
+  {
+    // Live music, which the other four barely carry: small venues and touring
+    // acts. Measured 26 Sep: Chiang Mai 14, Bangkok 36, Phuket 12, every one
+    // with a venue name; Chiang Mai also publishes coordinates.
+    id: "bandsintown",
+    urls: {
+      "chiang-mai": ["https://www.bandsintown.com/c/chiang-mai-thailand"],
+      bangkok: ["https://www.bandsintown.com/c/bangkok-thailand"],
+      phuket: ["https://www.bandsintown.com/c/phuket-thailand"],
+    },
+  },
 ];
 
 function ebPaths(slug: string): string[] {

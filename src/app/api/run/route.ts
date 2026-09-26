@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { findCity } from "../../../lib/cities.ts";
-import { fetchAll, type RawEvent } from "../../../lib/ldjson.ts";
+import { fetchAll, type FetchAllResult, type RawEvent } from "../../../lib/ldjson.ts";
+import { fetchRa } from "../../../lib/ra.ts";
 import { SOURCES, urlsFor } from "../../../lib/sources.ts";
 import { filterEvents } from "../../../lib/normalize.ts";
 import type { RunResult, SourceError, Source } from "../../../types.ts";
@@ -31,12 +32,17 @@ export async function GET(req: Request) {
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), 45_000);
 
-  const active = SOURCES.map((s) => ({ id: s.id, urls: urlsFor(s.id, city.id) })).filter(
-    (s) => s.urls.length > 0,
-  );
+  // RA is a GraphQL call rather than a listing page, so sources are held as
+  // thunks; everything downstream sees one uniform result shape.
+  const active: { id: Source; run: () => Promise<FetchAllResult> }[] = [
+    ...SOURCES.map((s) => ({ id: s.id, urls: urlsFor(s.id, city.id) }))
+      .filter((s) => s.urls.length > 0)
+      .map((s) => ({ id: s.id, run: () => fetchAll(s.urls, ac.signal) })),
+    { id: "ra" as const, run: () => fetchRa(city.id, lower, toDate, ac.signal) },
+  ];
 
   try {
-    const settled = await Promise.allSettled(active.map((s) => fetchAll(s.urls, ac.signal)));
+    const settled = await Promise.allSettled(active.map((s) => s.run()));
     const raws: { raw: RawEvent; source: Source }[] = [];
     const errors: SourceError[] = [];
 

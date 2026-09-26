@@ -233,3 +233,15 @@ test("coordinates come from the same entry as the venue name", () => {
   assert.equal(e.venue, "Nimman Coworking");
   assert.equal(e.lat, null, "must not borrow the other entry's pin");
 });
+
+test("extracts Event subtypes, not just a bare Event", () => {
+  const html = `<script type="application/ld+json">${JSON.stringify([
+    { "@type": "MusicEvent", name: "Gig", startDate: "2026-09-27T18:30:00" },
+    { "@type": "https://schema.org/TheaterEvent", name: "Play", startDate: "2026-09-28T19:00:00" },
+    { "@type": "Organization", name: "Not an event" },
+  ])}</script>`;
+  assert.deepEqual(
+    extractEvents(html).map((e) => e.name),
+    ["Gig", "Play"],
+  );
+});
