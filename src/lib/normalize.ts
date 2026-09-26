@@ -78,7 +78,12 @@ export type Normalized = { event: Event; online: boolean; start: Date | null };
 export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized {
   const { venue, address } = flatAddress(raw.location);
   const { lat, lng } = geoOf(pickPlace(raw.location));
-  const org = first(raw.organizer as Record<string, unknown> | Record<string, unknown>[]);
+  // HACK(bandsintown): organizer repeats the performer, so the column would name a touring act rather than a partner to call. The venue is the lead and is published on every row; the artist is already in the event name.
+  // REVISIT: keep it if bandsintown ever publishes the promoter there.
+  const org =
+    source === "bandsintown"
+      ? undefined
+      : first(raw.organizer as Record<string, unknown> | Record<string, unknown>[]);
   const parsed = parseStart(raw.startDate);
   return {
     online: isOnline(raw.eventAttendanceMode),
@@ -96,7 +101,12 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
       online: isOnline(raw.eventAttendanceMode),
       lat,
       lng,
-      organizer: org && typeof org === "object" ? str(org.name) : str(raw.organizer),
+      organizer:
+        org && typeof org === "object"
+          ? str(org.name)
+          : source === "bandsintown"
+            ? null
+            : str(raw.organizer),
       organizerUrl: org && typeof org === "object" ? str(org.url) : null,
     },
   };
