@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CITIES, findCity } from "../../../lib/cities.ts";
 import { CITY_COPY } from "../../../lib/city-copy.ts";
+import { ldScript } from "../../../lib/jsonld.ts";
+import { httpUrl } from "../../../lib/url.ts";
 import { runCity } from "../../../lib/run.ts";
 import { SITE, BRAND, BRAND_SITE } from "../../../lib/site.ts";
 import { toLocal } from "../../../lib/time.ts";
@@ -67,9 +69,9 @@ function eventLd(e: Event, city: string) {
       ? "https://schema.org/OnlineEventAttendanceMode"
       : "https://schema.org/OfflineEventAttendanceMode",
     eventStatus: "https://schema.org/EventScheduled",
-    url: e.url || undefined,
+    url: httpUrl(e.url) ?? undefined,
     location: e.online
-      ? { "@type": "VirtualLocation", url: e.url || undefined }
+      ? { "@type": "VirtualLocation", url: httpUrl(e.url) ?? undefined }
       : {
           "@type": "Place",
           name: e.venue ?? city,
@@ -156,8 +158,8 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
           {events.map((e) => (
             <li key={`${e.url}-${e.startUtc}`}>
               <h3>
-                {e.url ? (
-                  <a href={e.url} target="_blank" rel="noreferrer">
+                {httpUrl(e.url) ? (
+                  <a href={httpUrl(e.url)!} target="_blank" rel="noreferrer">
                     {e.name}
                   </a>
                 ) : (
@@ -221,7 +223,7 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
         .
       </footer>
 
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldScript(ld) }} />
     </main>
   );
 }

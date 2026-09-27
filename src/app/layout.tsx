@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import { ldScript } from "../lib/jsonld.ts";
 import { BRAND, BRAND_SITE, SITE } from "../lib/site.ts";
 
 // Cities the tool actually covers. Naming them beats a generic "Thailand":
@@ -133,8 +134,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SpeedInsights />
         <script
           type="application/ld+json"
-          // Serialised from a literal above, so there is no untrusted input to escape.
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(LD_JSON) }}
+          dangerouslySetInnerHTML={{ __html: ldScript(LD_JSON) }}
         />
       </body>
     </html>
