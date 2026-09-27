@@ -56,6 +56,7 @@ export default function Page() {
 
   return (
     <main className="wrap">
+      <div className="content">
       <div className="brand">
         {/* Wordmark is 108x20; height is set in CSS so it scales with the header. */}
         <img src="/logo.svg" alt="One Wallet" width={108} height={20} />
@@ -160,6 +161,8 @@ export default function Page() {
           </span>
         ))}
       </nav>
+
+      </div>
 
       <footer className="foot">
         A lead finder for{" "}

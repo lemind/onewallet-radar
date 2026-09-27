@@ -46,6 +46,16 @@ function load(): Promise<any> {
   return loader;
 }
 
+// Green for today, blue for later. Grey for events already past is deliberately
+// absent: filterEvents drops those before they reach the map.
+const TODAY = "#1a8f4c";
+const LATER = "#2563eb";
+
+/** Today in Asia/Bangkok, as the YYYY-MM-DD that startLocal already uses. */
+function bangkokToday(): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(new Date());
+}
+
 /** Escape for HTML text and quoted attributes alike. */
 function esc(s: string | null): string {
   return (s ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -93,8 +103,12 @@ export default function Map({ events }: { events: Event[] }) {
           maxZoom: 19,
         }).addTo(map.current);
         const group = L.layerGroup().addTo(map.current);
+        const today = bangkokToday();
         for (const at of venues) {
           const head = at[0];
+          // A venue is "today" if anything it hosts today is still to come.
+          const isToday = at.some((e) => e.startLocal.startsWith(today));
+          const colour = isToday ? TODAY : LATER;
           const where = [head.venue, head.address].filter(Boolean).map(esc).join("<br>");
           const list = at
             .map((e) => {
@@ -105,13 +119,33 @@ export default function Map({ events }: { events: Event[] }) {
               return `<li>${esc(e.startLocal)} — ${name}</li>`;
             })
             .join("");
-          group.addLayer(
-            L.marker([head.lat, head.lng]).bindPopup(
-              `<strong>${where}</strong>` +
-                (at.length > 1 ? `<br><em>${at.length} events</em>` : "") +
-                `<ul class="pev">${list}</ul>`,
-            ),
+          const marker = L.circleMarker([head.lat, head.lng], {
+            radius: 8,
+            color: "#ffffff",
+            weight: 2,
+            fillColor: colour,
+            fillOpacity: 1,
+          }).bindPopup(
+            `<strong>${where}</strong>` +
+              (at.length > 1 ? `<br><em>${at.length} events</em>` : "") +
+              `<ul class="pev">${list}</ul>`,
           );
+          group.addLayer(marker);
+          // L.marker ships a focusable <img role="button">; a circleMarker is a
+          // bare <path>, so keyboard users lose every popup unless we say so.
+          const el = marker.getElement() as SVGElement | null;
+          if (el) {
+            el.setAttribute("tabindex", "0");
+            el.setAttribute("role", "button");
+            el.setAttribute("aria-label", `${head.venue ?? "Venue"}, ${at.length} event${at.length > 1 ? "s" : ""}`);
+            el.addEventListener("keydown", (ev) => {
+              const k = (ev as KeyboardEvent).key;
+              if (k === "Enter" || k === " ") {
+                ev.preventDefault();
+                marker.openPopup();
+              }
+            });
+          }
         }
         map.current.fitBounds(
           pins.map((e) => [e.lat, e.lng]),
@@ -136,6 +170,12 @@ export default function Map({ events }: { events: Event[] }) {
       <div ref={box} className="map" hidden={failed} />
       {!failed && (
         <p className="maplegend">
+          <span className="key">
+            <i className="dot" style={{ background: TODAY }} /> today
+          </span>
+          <span className="key">
+            <i className="dot" style={{ background: LATER }} /> later
+          </span>
           {venues.length} {venues.length === 1 ? "location" : "locations"} on the map, {pins.length} of{" "}
           {events.length} leads — the rest publish an address with no coordinates.
         </p>

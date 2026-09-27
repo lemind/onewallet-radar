@@ -135,6 +135,7 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
 
   return (
     <main className="wrap">
+      <div className="content">
       <nav className="crumbs">
         <Link href="/">{BRAND} Radar</Link> <span aria-hidden>›</span> Events in {city.label}
       </nav>
@@ -224,6 +225,8 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
           </li>
         ))}
       </ul>
+
+      </div>
 
       <footer className="foot">
         A lead finder for{" "}
