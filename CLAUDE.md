@@ -8,13 +8,32 @@ gate that can still invalidate the architecture (does Meetup serve Vercel's data
 - specs/001-event-lead-finder/research.md — decisions D1–D7, open items O1–O3
 <!-- SPECKIT END -->
 
+## Rule zero — do nothing until asked
+
+**Do exactly what was asked. Nothing else. Then stop.**
+
+A question is a question, not a work order. "Is the code reviewed?", "have you
+deployed?", "is the PR ready?", "what is that number?" — answer it in as few
+lines as it deserves and stop. Do not investigate, fix, refactor, commit,
+deploy, or open a review off the back of a question.
+
+If the answer reveals something that needs doing, say so in one line and offer
+it. Do not begin it.
+
+No extra scope. No "while I was in there". No tidying an unrelated file. No
+follow-up work because it seemed obviously next. Wait to be told.
+
+The only exception is work already explicitly ordered and still in flight.
+
 ## Conventions
 
 **Commit messages**: one line, `feat|fix|chore|docs|test(T0XX): <short desc>`. Omit `(T0XX)` when the commit isn't task-scoped. Never commit without an explicit request.
 
 **No AI attribution** in commits or PRs — no `Co-Authored-By`, no "Generated with", no mention. This is client-facing work.
 
-**PR descriptions**: plain human language. No file paths, line numbers, identifiers or finding counts. Describe what changed for a person, not what changed in the diff.
+**PR descriptions**: plain human language, **short and structured**. Describe what changed for a person, not what changed in the diff. No file paths, line numbers, identifiers or finding counts.
+
+Use short headed sections with a blank line between them, not a wall of prose and not a bullet dump. One idea per section, a sentence or two each. Under 1000 characters total. A reader skims the headings and knows what shipped.
 
 **Code comments: max ~200 chars, one line.** State what or why, then point at the decision — `SPEC.md §9.4`, `research.md D2`. Never restate rationale inline. If a comment needs a second line to justify itself, that justification belongs in the spec.
 
