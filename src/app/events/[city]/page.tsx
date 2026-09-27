@@ -13,6 +13,11 @@ import type { CityId, Event } from "../../../types.ts";
 // Rebuilt hourly: a crawler must get the events as HTML, and scraping six
 // sources per request is far too slow to do on the fly.
 export const revalidate = 3600;
+export const maxDuration = 60;
+
+// A source that black-holes the connection would otherwise stall on undici's
+// 300s default, three cities deep, and hang the build. See research.md D2.
+const BUDGET_MS = 20_000;
 
 export function generateStaticParams() {
   return CITIES.map((c) => ({ city: c.id }));
@@ -28,13 +33,18 @@ function window(): { from: string; to: string } {
   };
 }
 
-async function load(city: CityId): Promise<Event[]> {
-  const { from, to } = window();
+async function load(city: CityId, from: string, to: string): Promise<Event[]> {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), BUDGET_MS);
   try {
-    return (await runCity(city, from, to)).events;
-  } catch {
-    // A page that renders without listings is still a page; failing the build is not.
+    return (await runCity(city, from, to, ac.signal)).events;
+  } catch (err) {
+    // A page that renders without listings is still a page; failing the build
+    // is not. Logged because an empty page that gets indexed is a silent loss.
+    console.error(`[events/${city}] no listings:`, err instanceof Error ? err.message : err);
     return [];
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -88,8 +98,8 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
   const city = findCity((await params).city);
   if (!city) notFound();
 
-  const events = await load(city.id);
   const { from, to } = window();
+  const events = await load(city.id, from, to);
   const venues = [...new Set(events.map((e) => e.venue).filter(Boolean))] as string[];
   const organizers = [...new Set(events.map((e) => e.organizer).filter(Boolean))] as string[];
   const others = CITIES.filter((c) => c.id !== city.id);

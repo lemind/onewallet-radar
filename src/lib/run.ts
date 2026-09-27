@@ -5,8 +5,17 @@ import { SOURCES, urlsFor } from "./sources.ts";
 import { filterEvents } from "./normalize.ts";
 import type { CityId, RunResult, Source, SourceError } from "../types.ts";
 
-export class MeetupDown extends Error {}
-export class AllDown extends Error {}
+/** Fatal for a run. Carries the per-source errors, which are the whole diagnostic. */
+export class RunFailed extends Error {
+  constructor(
+    message: string,
+    readonly errors: SourceError[],
+  ) {
+    super(message);
+  }
+}
+export class MeetupDown extends RunFailed {}
+export class AllDown extends RunFailed {}
 
 /**
  * Scrape one city over one window. Shared by the API route and the city pages
@@ -23,6 +32,12 @@ export async function runCity(
 
   const fromDate = new Date(`${from}T00:00:00+07:00`);
   const toDate = new Date(`${to}T23:59:59+07:00`);
+  // Validated here as well as in the route: an unchecked window silently
+  // becomes an Invalid Date and every comparison against it quietly fails.
+  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+    throw new RangeError("from and to must be YYYY-MM-DD");
+  }
+  if (toDate < fromDate) throw new RangeError("to is before from");
   const now = new Date();
   const lower = fromDate > now ? fromDate : now;
 
@@ -38,6 +53,7 @@ export async function runCity(
   const settled = await Promise.allSettled(active.map((s) => s.run()));
   const raws: { raw: RawEvent; source: Source }[] = [];
   const errors: SourceError[] = [];
+  const notices: SourceError[] = [];
   let meetupDown = false;
 
   settled.forEach((r, i) => {
@@ -52,7 +68,7 @@ export async function runCity(
           message: `${r.value.failed} of ${r.value.total} listing pages failed (${r.value.reason})`,
         });
       } else if (r.value.note) {
-        errors.push({ source, message: r.value.note });
+        notices.push({ source, message: r.value.note });
       }
     } else {
       errors.push({ source, message: r.reason instanceof Error ? r.reason.message : String(r.reason) });
@@ -62,13 +78,24 @@ export async function runCity(
 
   // Meetup is the only source carrying organizers, so losing it is not a
   // degraded result — it is a different, much worse product pretending to work.
-  if (settled.every((r) => r.status === "rejected")) throw new AllDown("no source could be reached");
-  if (meetupDown) throw new MeetupDown("meetup unreachable");
+  if (settled.every((r) => r.status === "rejected")) {
+    throw new AllDown("no source could be reached", errors);
+  }
+  if (meetupDown) throw new MeetupDown("meetup unreachable", errors);
 
   const { events, dropped } = filterEvents(raws, {
     now: lower,
     to: toDate,
     centre: { lat: city.lat, lng: city.lng, radiusKm: city.radiusKm },
   });
-  return { city: city.id, from, to, fetchedAt: new Date().toISOString(), events, dropped, errors };
+  return {
+    city: city.id,
+    from,
+    to,
+    fetchedAt: new Date().toISOString(),
+    events,
+    dropped,
+    errors,
+    notices,
+  };
 }

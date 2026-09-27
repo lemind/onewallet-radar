@@ -43,4 +43,6 @@ export type RunResult = {
   events: Event[];
   dropped: DroppedCounts;
   errors: SourceError[];
+  /** Things worth saying that are not failures, such as a source hitting its page cap. */
+  notices: SourceError[];
 };

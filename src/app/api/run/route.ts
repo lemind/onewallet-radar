@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { findCity } from "../../../lib/cities.ts";
-import { AllDown, MeetupDown, runCity } from "../../../lib/run.ts";
+import { RunFailed, runCity } from "../../../lib/run.ts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -26,8 +26,13 @@ export async function GET(req: Request) {
   try {
     return NextResponse.json(await runCity(city.id, from, to, ac.signal));
   } catch (err) {
-    if (err instanceof AllDown || err instanceof MeetupDown) {
-      return NextResponse.json({ error: err.message, events: [], errors: [] }, { status: 502 });
+    // The per-source errors are the whole diagnostic on this path; a bare
+    // "meetup unreachable" cannot tell an abort from a block from a DNS failure.
+    if (err instanceof RunFailed) {
+      return NextResponse.json(
+        { error: err.message, events: [], errors: err.errors },
+        { status: 502 },
+      );
     }
     throw err;
   } finally {

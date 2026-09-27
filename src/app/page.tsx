@@ -88,6 +88,13 @@ export default function Page() {
 
       {error && <p className="note bad">Could not reach Meetup — {error}</p>}
 
+      {result && result.notices?.length > 0 && (
+        // Not a failure: a source hit its own page cap and said so.
+        <p className="note">
+          {result.notices.map((n) => `${n.source} — ${n.message}`).join("; ")}
+        </p>
+      )}
+
       {result && result.errors.length > 0 && (
         // Partial success: some data came back, some did not. Say which, rather than
         // letting a thinner result look like a complete one.
