@@ -155,10 +155,24 @@ configured and empty.
 
 ### 6.1b Map
 
-**Un-cut 25 Sep.** Event locations show on an OpenStreetMap map above the table.
-It costs nothing — no key, no account, no billing — which is why the original
-objection (a map meant Google, and Google meant a billed cloud project) no
-longer holds.
+**Un-cut 25 Sep.** Event locations show on a map above the table. The original
+objection — a map meant Google, and Google meant a billed cloud project — does
+not hold: there is no billing account and no card.
+
+**Changed 27 Sep.** The basemap was OpenStreetMap raster tiles, which need no
+key at all. Raster tiles bake the label language into the image and OSM renders
+Thailand in Thai, so every street read as ถนน… on an English page. No keyless
+provider publishes English labels for Thailand; eight were measured.
+
+The basemap is now MapTiler vector tiles drawn by MapLibre GL, with
+`language=en` so labels use `name:en` and fall back to the local name only
+where OpenStreetMap has no English one. This needs a free MapTiler key — email
+signup, no card — supplied as `NEXT_PUBLIC_MAPTILER_KEY`. The key is public by
+construction, so it must be origin-restricted in the MapTiler dashboard.
+
+Leaflet still draws the markers, so the pins, popups and colours are unchanged.
+MapLibre needs WebGL; without it the map reports itself as unavailable and the
+table is unaffected.
 
 Eventbrite and Luma publish venue coordinates; Meetup publishes a street address
 but none, so those leads appear in the table and not on the map. The legend says

@@ -25,7 +25,9 @@ Verified in production on 24 Sep 2026: Chiang Mai 8 events, Bangkok 7, Phuket 4,
 no errors, ~1.8s per run. Meetup serves Vercel's datacenter IPs — that was the
 one architectural unknown and it is now answered from production, not a probe.
 
-No login, no database, no API keys. Venue contact enrichment (phone, website,
+No login and no database. The only key is a free MapTiler one for the map's
+English labels, set as `NEXT_PUBLIC_MAPTILER_KEY` — see `.env.example`. Without
+it everything works except the basemap. Venue contact enrichment (phone, website,
 district via Google Places) is designed but not built — see `SPEC.md` §9.4.
 
 ## Run it
