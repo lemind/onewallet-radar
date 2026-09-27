@@ -166,11 +166,12 @@ a { color: var(--accent); }
 }
 
 .maplegend .key { margin-right: 14px; white-space: nowrap; }
-.maplegend .dot {
+/* Shared by the map legend and the table's When column. */
+.dot {
   display: inline-block;
   width: 9px;
   height: 9px;
-  margin-right: 5px;
+  margin-right: 6px;
   border-radius: 50%;
   vertical-align: baseline;
   border: 1px solid var(--card);

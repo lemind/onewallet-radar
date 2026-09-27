@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Event } from "../types.ts";
+import { LATER, TODAY, bangkokToday, isToday } from "../lib/when.ts";
 
 // Leaflet draws the markers; MapLibre draws the basemap from MapTiler vector
 // tiles, which is the only way to get English labels — see SPEC.md 6.1b.
@@ -92,16 +93,6 @@ function load(): Promise<any> {
   return loader;
 }
 
-// Green for today, blue for later. Grey for events already past is deliberately
-// absent: filterEvents drops those before they reach the map.
-const TODAY = "#1a8f4c";
-const LATER = "#2563eb";
-
-/** Today in Asia/Bangkok, as the YYYY-MM-DD that startLocal already uses. */
-function bangkokToday(): string {
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(new Date());
-}
-
 /** Escape for HTML text and quoted attributes alike. */
 function esc(s: string | null): string {
   return (s ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -157,8 +148,7 @@ export default function Map({ events }: { events: Event[] }) {
         for (const at of venues) {
           const head = at[0];
           // A venue is "today" if anything it hosts today is still to come.
-          const isToday = at.some((e) => e.startLocal.startsWith(today));
-          const colour = isToday ? TODAY : LATER;
+          const colour = at.some((e) => isToday(e.startLocal, today)) ? TODAY : LATER;
           const where = [head.venue, head.address].filter(Boolean).map(esc).join("<br>");
           const list = at
             .map((e) => {

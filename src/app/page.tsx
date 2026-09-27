@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CITIES } from "../lib/cities.ts";
 import { toCsv, filename } from "../lib/csv.ts";
 import { BRAND, BRAND_SITE } from "../lib/site.ts";
+import { LATER as COLOUR_LATER, TODAY as COLOUR_TODAY, bangkokToday, isToday } from "../lib/when.ts";
 import type { RunResult } from "../types.ts";
 import Map from "./Map.tsx";
 
@@ -53,6 +54,8 @@ export default function Page() {
   const raw = result
     ? result.events.length + Object.values(result.dropped).reduce((a, b) => a + b, 0)
     : 0;
+  // Once per render, not once per row.
+  const today = bangkokToday();
 
   return (
     <main className="wrap">
@@ -131,7 +134,15 @@ export default function Page() {
               <tbody>
                 {result.events.map((ev) => (
                   <tr key={`${ev.url}-${ev.startUtc}`}>
-                    <td className="when">{ev.startLocal}</td>
+                    <td className="when">
+                      {/* Same green/blue as the map pins, from lib/when.ts. */}
+                      <i
+                        className="dot"
+                        style={{ background: isToday(ev.startLocal, today) ? COLOUR_TODAY : COLOUR_LATER }}
+                        title={isToday(ev.startLocal, today) ? "today" : "later"}
+                      />
+                      {ev.startLocal}
+                    </td>
                     <td>{ev.name}</td>
                     <td>
                       {ev.online ? <em>Online</em> : (ev.venue ?? "—")}
