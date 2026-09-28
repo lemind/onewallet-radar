@@ -7,7 +7,7 @@ import { ldScript } from "../../../lib/jsonld.ts";
 import { httpUrl } from "../../../lib/url.ts";
 import { runCity } from "../../../lib/run.ts";
 import { SITE, BRAND, BRAND_SITE } from "../../../lib/site.ts";
-import { toLocal } from "../../../lib/time.ts";
+import { parseStart, toLocal } from "../../../lib/time.ts";
 import type { CityId, Event } from "../../../types.ts";
 
 // Rebuilt hourly: a crawler must get the events as HTML, and scraping six
@@ -70,11 +70,36 @@ export async function generateMetadata({
   };
 }
 
+/**
+ * startDate is emitted as UTC, so the end has to match or the pair reads as
+ * inconsistent. Sources publish three shapes: bare date, naive local, and an
+ * offset. A bare date stays a date — giving it a midnight would invent a time.
+ */
+function endDate(end: string | null): string | undefined {
+  if (!end) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(end)) return end;
+  return parseStart(end)?.at.toISOString();
+}
+
+/** A sentence built only from fields we hold. Nothing here is invented. */
+function eventDescription(e: Event, city: string): string {
+  const where = e.online ? "Online" : (e.venue ?? e.address ?? city);
+  const who = e.organizer ? `, organized by ${e.organizer}` : "";
+  const acts = e.performer ? `, featuring ${e.performer}` : "";
+  return `${e.name} — ${e.startLocal} at ${where}, ${city}, Thailand${who}${acts}.`;
+}
+
 function eventLd(e: Event, city: string) {
   return {
     "@type": "Event",
     name: e.name,
+    description: eventDescription(e, city),
     startDate: e.startUtc || undefined,
+    // Published where the source gives one; never guessed from a duration.
+    endDate: endDate(e.end),
+    ...(e.performer
+      ? { performer: { "@type": "PerformingGroup", name: e.performer } }
+      : {}),
     eventAttendanceMode: e.online
       ? "https://schema.org/OnlineEventAttendanceMode"
       : "https://schema.org/OfflineEventAttendanceMode",

@@ -100,6 +100,10 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
       ? undefined
       : first(raw.organizer as Record<string, unknown> | Record<string, unknown>[]);
   const orgName = org && typeof org === "object" ? str(org.name) : str(org);
+  // schema.org allows one performer or several; take the names we can read.
+  const performers = (Array.isArray(raw.performer) ? raw.performer : [raw.performer])
+    .map((pf) => (pf && typeof pf === "object" ? str((pf as Record<string, unknown>).name) : str(pf)))
+    .filter(Boolean);
   const parsed = parseStart(raw.startDate);
   return {
     online: isOnline(raw.eventAttendanceMode),
@@ -120,6 +124,13 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
       // str(org), not str(raw.organizer): first() already unwrapped the array, and
       // an array reaching str() is rejected, losing the organizer and the lead.
       organizer: orgName,
+      // Meetup echoes the group into performer as well, which would present a
+      // meetup group as an act. A performer that repeats the organizer says
+      // nothing, so drop it. Measured 28 Sep: 10 of 25 on Bangkok.
+      performer: (() => {
+        const p = performers.length ? performers.join(", ") : null;
+        return p && p !== orgName ? p : null;
+      })(),
       // Name and link move together: a link with no name beside it is the
       // partial fill SPEC.md 9.9 forbids, and renders as an empty anchor.
       organizerUrl: orgName && org && typeof org === "object" ? str(org.url) : null,

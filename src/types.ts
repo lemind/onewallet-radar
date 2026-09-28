@@ -17,6 +17,8 @@ export type Event = {
   address: string | null;
   organizer: string | null;
   organizerUrl: string | null;
+  /** Who is playing, where the source says so. Bandsintown and RA publish it. */
+  performer: string | null;
   /** True when the source says it is online-only: an organizer lead, no venue. */
   online: boolean;
   /** Venue coordinates where the source publishes them; Meetup never does. */

@@ -19,6 +19,7 @@ const QUERY = `query GET_EVENT_LISTINGS($filters: FilterInputDtoInput, $pageSize
   eventListings(filters: $filters, pageSize: $pageSize, page: $page, sort: $sort) {
     data { event { title startTime endTime contentUrl
       venue { name address area { name } }
+      artists { name }
       promoters { id name } } }
     totalResults
   }
@@ -38,6 +39,7 @@ type RaEvent = {
   contentUrl?: string;
   venue?: { name?: string; address?: string; area?: { name?: string } | null } | null;
   promoters?: { id?: string; name?: string }[] | null;
+  artists?: { name?: string }[] | null;
 };
 
 /** Map RA's own shape onto schema.org so normalize() handles it like every other source. */
@@ -53,6 +55,7 @@ function toSchemaOrg(e: RaEvent): RawEvent {
     location: e.venue?.name
       ? { "@type": "Place", name: e.venue.name, address: e.venue.address ?? undefined }
       : undefined,
+    performer: e.artists?.filter((a) => a.name).map((a) => ({ "@type": "PerformingGroup", name: a.name })),
     organizer: promoter
       ? {
           "@type": "Organization",

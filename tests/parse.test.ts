@@ -96,6 +96,7 @@ test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
       address: "17 Moonmuang Rd, Si Phum, Chiang Mai",
       organizer: null,
       organizerUrl: null,
+      performer: null,
     },
   ]);
   assert.ok(csv.startsWith("﻿"), "BOM present or Excel mangles Thai");
@@ -177,7 +178,7 @@ test("Excel formula characters are neutralised, so a phone number stays a phone 
   const csv = toCsv([{
     source: "meetup", name: "n", url: "u", startUtc: "", startLocal: "2026-09-27",
     startPrecision: "date", end: null, online: false, lat: null, lng: null, venue: "=Escape Hunt",
-    address: "+66 2 656 1000", organizer: null, organizerUrl: null,
+    address: "+66 2 656 1000", organizer: null, organizerUrl: null, performer: null,
   }]);
   const row = csv.split("\r\n")[1];
   assert.ok(!/,=Escape/.test(row), "a leading = must not reach Excel bare");
