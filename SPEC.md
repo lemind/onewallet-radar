@@ -125,13 +125,22 @@ stages is added.
 | **Meetup** | `Event` nodes in `ld+json` | yes, 12/12 measured | full timestamp | all three |
 | **Eventbrite** | schema.org `ItemList` in `ld+json`, 6 category paths | no | **date only** | all three |
 | **Luma** | schema.org `ItemList` in `ld+json` | yes | full timestamp | **Bangkok only** |
+| **allevents.in** | loose `Event` nodes + `ItemList` in `ld+json` | ~60% | date | all three |
 
 All three are read by one parser (`src/lib/ldjson.ts`) because they publish the
 same schema.org shapes — directly for Meetup, wrapped in an `ItemList` for the
 other two.
 
-Measured for a one-week window on 25 Sep: **Chiang Mai 15, Bangkok 31, Phuket 5.**
-Bangkok reaches 78 over three months.
+Measured for a one-week window on 25 Sep, after adding allevents.in:
+**Chiang Mai 24, Bangkok 46, Phuket 12** — map locations 12, 29 and 2.
+
+**allevents.in was wrongly rejected in v0.2.** It was recorded as publishing
+"only FAQ and breadcrumb data"; that measurement used `/chiang-mai/all`, and the
+events are at `/chiang-mai/`. The correct page carries 40 Chiang Mai events with
+venue, address and coordinates on every one — better metadata than any other
+source, and the only one reaching Thai-language venues such as the Yi Peng
+festivals. Re-added 25 Sep. Its category sub-pages repeat the same set, so one
+fetch per city is enough.
 
 **Eventbrite was un-deferred on 24 Sep.** v0.2 dropped it partly because its
 parser had to dig through `window.__SERVER_DATA__`, an internal JS structure. That
@@ -146,13 +155,32 @@ configured and empty.
 
 ### 6.1b Map
 
-**Un-cut 25 Sep.** Event locations show on an OpenStreetMap map above the table.
-It costs nothing — no key, no account, no billing — which is why the original
-objection (a map meant Google, and Google meant a billed cloud project) no
-longer holds.
+**Un-cut 25 Sep.** Event locations show on a map above the table. The original
+objection — a map meant Google, and Google meant a billed cloud project — does
+not hold: there is no billing account and no card.
+
+**Changed 27 Sep.** The basemap was OpenStreetMap raster tiles, which need no
+key at all. Raster tiles bake the label language into the image and OSM renders
+Thailand in Thai, so every street read as ถนน… on an English page. No keyless
+provider publishes English labels for Thailand; eight were measured.
+
+MapTiler vector tiles were tried first and reached most of the way, but fell
+back to Thai wherever OpenStreetMap carries no `name:en`.
+
+**Changed 28 Sep.** The basemap is Google Maps, which labels in whatever
+language it is asked for, so the streets read in English throughout. It needs
+`NEXT_PUBLIC_GOOGLE_MAPS_KEY` and a Google Cloud project with billing enabled —
+a card is required even though the volume sits inside the free monthly
+allowance of 10,000 map loads. The key is public by construction and should be
+restricted to the site's domain.
+
+Pins are one per venue, green for today and blue for later, with the same
+colours in the table's When column. A rejected key reports through
+`gm_authFailure`, so the map says it is unavailable rather than sitting grey.
 
 Eventbrite and Luma publish venue coordinates; Meetup publishes a street address
-but none, so those leads appear in the table and not on the map. The legend says
+but none, and RA's are rounded to whole degrees and therefore unusable. Those
+gaps are now closed by the Places lookup in §9.4. The legend says
 how many are shown. Closing that gap needs paid geocoding and is not planned.
 
 ### 6.2 Volume ceiling
@@ -173,7 +201,6 @@ Firecrawl. Bangkok already passes 78 without one.
 | Eventpop | 2.7 KB shell — fully JS-rendered |
 | Ticketmelon | JS-rendered, no structured data |
 | tourismthailand.org | HTTP 403, bot-blocked |
-| allevents.in | JSON-LD contains only FAQ and breadcrumb data |
 | Chiang Mai Citylife | No event schema; would need a bespoke parser |
 
 Eventpop and Ticketmelon are Thai-language platforms and are the route to
@@ -331,6 +358,37 @@ The source brief asks for vendors and sponsors per event. This data is not
 published for meetups or provincial festivals, and only sporadically for large
 conferences. **Venue and organizer are the real outputs.** Any UI promising
 vendors will show an empty panel.
+
+### 9.4a Venue lookup — built 28 Sep
+
+Sources that publish an address but no coordinates left most leads off the map:
+Meetup never publishes them, and RA's are rounded to whole degrees, which would
+place a Bangkok venue some 60km out.
+
+Measured over 84 unplaced leads across the three cities: Google Places located
+84 with none wrong. MapTiler's geocoder managed 48 and placed 29 somewhere
+wrong — an address geocoder falls back to a district or postcode centroid and
+reports it as the venue, which is the "wrong phone number is worse than a
+missing one" failure in map form. Places returns real businesses, so it does
+not have that failure mode.
+
+The lookup runs after filtering, so a call is only spent on a lead that
+survived, and results are cached for 30 days — a venue does not move. Without
+the cache the hourly page rebuild would make roughly 60,000 calls a month
+against a 10,000 free tier, which is the difference between nothing and about
+$1,600 a month. Failures are never cached; only real answers are.
+
+The same call returns the venue's phone number and website, which fill the
+contact columns in the export. It runs for every named venue, not only the
+unplaced ones — Eventbrite and Luma publish coordinates, so restricting it to
+unplaced leads left the two best sources exporting blank contacts.
+
+Text Search always answers, so a result is only trusted when its name shares a
+distinctive word with what was asked for. City and country names do not count:
+"TBA, Bangkok" returns "TBA Rooftop Bar Bangkok" with a real phone number, and
+writing that beside a placeholder venue is the 9.9 failure in the export. A pin
+that came from the lookup rather than the source says "approximate location" in
+its popup.
 
 ### 9.4 District is enrichment-only, and therefore a column
 

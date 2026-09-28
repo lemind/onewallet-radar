@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { CITIES } from "../lib/cities.ts";
 import { toCsv, filename } from "../lib/csv.ts";
+import { SiteFooter } from "./Chrome.tsx";
+import { LATER as COLOUR_LATER, TODAY as COLOUR_TODAY, bangkokToday, isToday } from "../lib/when.ts";
 import type { RunResult } from "../types.ts";
 import Map from "./Map.tsx";
 
@@ -52,15 +54,21 @@ export default function Page() {
   const raw = result
     ? result.events.length + Object.values(result.dropped).reduce((a, b) => a + b, 0)
     : 0;
+  // Once per render, not once per row.
+  const today = bangkokToday();
 
   return (
     <main className="wrap">
+      <div className="content">
       <div className="brand">
         {/* Wordmark is 108x20; height is set in CSS so it scales with the header. */}
         <img src="/logo.svg" alt="One Wallet" width={108} height={20} />
-        <h1>Radar</h1>
+        {/* The wordmark carries "One Wallet" visually; the heading has to say it in text too. */}
+        <h1><span className="vh">One Wallet </span>Radar</h1>
       </div>
-      <p className="sub">Upcoming events in Thai cities, and the venues and organizers behind them.</p>
+      <p className="sub">
+        Upcoming events in Bangkok, Chiang Mai and Phuket, and the venues and organizers behind them.
+      </p>
 
       <form onSubmit={run}>
         <label>
@@ -79,10 +87,17 @@ export default function Page() {
           To
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
-        <button type="submit" disabled={busy}>{busy ? "Searching…" : "Run"}</button>
+        <button type="submit" disabled={busy}>{busy ? "Searching…" : "Show events"}</button>
       </form>
 
       {error && <p className="note bad">Could not reach Meetup — {error}</p>}
+
+      {result && result.notices?.length > 0 && (
+        // Not a failure: a source hit its own page cap and said so.
+        <p className="note">
+          {result.notices.map((n) => `${n.source} — ${n.message}`).join("; ")}
+        </p>
+      )}
 
       {result && result.errors.length > 0 && (
         // Partial success: some data came back, some did not. Say which, rather than
@@ -119,7 +134,15 @@ export default function Page() {
               <tbody>
                 {result.events.map((ev) => (
                   <tr key={`${ev.url}-${ev.startUtc}`}>
-                    <td className="when">{ev.startLocal}</td>
+                    <td className="when">
+                      {/* Same green/blue as the map pins, from lib/when.ts. */}
+                      <i
+                        className="dot"
+                        style={{ background: isToday(ev.startLocal, today) ? COLOUR_TODAY : COLOUR_LATER }}
+                        title={isToday(ev.startLocal, today) ? "today" : "later"}
+                      />
+                      {ev.startLocal}
+                    </td>
                     <td>{ev.name}</td>
                     <td>
                       {ev.online ? <em>Online</em> : (ev.venue ?? "—")}
@@ -139,6 +162,59 @@ export default function Page() {
           </div>
         </>
       )}
+
+      <nav className="citynav">
+        Browse what's on: <a href="/events">Events in Thailand</a>
+        {CITIES.map((c) => (
+          <span key={c.id}>
+            {" · "}
+            <a href={`/events/${c.id}`}>Events in {c.label}</a>
+          </span>
+        ))}
+      </nav>
+
+      {/* The form above renders as three inputs and nothing else, which gave a
+          crawler 58 words to judge the site's own home page on. Measured 28 Sep. */}
+      <section className="about prose">
+        <h2>What this is</h2>
+        <p>
+          Radar collects events that are already published — on Meetup, Eventbrite, Luma,
+          AllEvents and Resident Advisor — and puts the businesses behind them in one list. Pick a
+          city and a date range and you get every event running in that window with the venue
+          hosting it, the organizer running it, an address, a map pin and, where we can match the
+          venue, a phone number and a website. The whole result downloads as a spreadsheet.
+        </p>
+
+        <h2>Why venues and organizers</h2>
+        <p>
+          A bar that hosts four nights a month and the promoter who fills it are both taking
+          payments from visitors, and neither of them appears on any list of businesses to
+          approach. The events are how you find them. A venue that keeps showing up across a
+          month's listings is a stronger lead than the same venue found once.
+        </p>
+
+        <h2>What it will not do</h2>
+        <p>
+          Nothing here is written by hand and no detail is inferred. An event whose organizer
+          published a date but no start time is shown as a date, not as midnight. A venue we
+          cannot match confidently is left without a phone number rather than given someone
+          else's. Every row keeps a link to the listing it came from, so anything can be checked
+          at the source.
+        </p>
+
+        <h2>Cities covered</h2>
+        <p>
+          <a href="/events/bangkok">Bangkok</a> has the deepest calendar in the country and two
+          separate markets inside it. <a href="/events/chiang-mai">Chiang Mai</a> runs the
+          busiest weekday programme, driven by its remote-working population.{" "}
+          <a href="/events/phuket">Phuket</a> is beach-club and resort led, and its season
+          follows the flight schedule. <a href="/events">All three are listed here</a>.
+        </p>
+      </section>
+
+      </div>
+
+      <SiteFooter />
     </main>
   );
 }

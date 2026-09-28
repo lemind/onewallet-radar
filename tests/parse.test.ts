@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { extractEvents } from "../src/lib/ldjson.ts";
 import { normalize, filterEvents } from "../src/lib/normalize.ts";
-import { parseStart, toLocal } from "../src/lib/time.ts";
-import { toCsv } from "../src/lib/csv.ts";
+import { parseStart, toLocal, toSchema } from "../src/lib/time.ts";
+import { COLUMNS, toCsv } from "../src/lib/csv.ts";
 
 const HTML = readFileSync(new URL("./fixtures/meetup-chiang-mai.html", import.meta.url), "utf8");
 const RAW = extractEvents(HTML);
@@ -96,6 +96,11 @@ test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
       address: "17 Moonmuang Rd, Si Phum, Chiang Mai",
       organizer: null,
       organizerUrl: null,
+      performer: null,
+      image: null,
+      phone: null,
+      website: null,
+      located: false,
     },
   ]);
   assert.ok(csv.startsWith("﻿"), "BOM present or Excel mangles Thai");
@@ -103,8 +108,34 @@ test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
   assert.ok(csv.includes('"17 Moonmuang Rd, Si Phum, Chiang Mai"'), "commas quoted");
   assert.ok(csv.includes('"The ""Edge"""'), "inner quotes doubled");
   assert.ok(csv.includes("\r\n"));
-  assert.equal(csv.split("\r\n")[1].split(",").length > 0, true);
+  // A header and a row that disagree shift every cell silently, and the old
+  // assertion here (length > 0) was true of any string at all.
+  const [header, first] = csv.replace("\ufeff", "").split("\r\n");
+  assert.equal(header.split(",").length, COLUMNS.length, "header width");
+  assert.equal(splitCsv(first).length, COLUMNS.length, "row width matches header");
+  assert.equal(COLUMNS.indexOf("phone"), 6);
+  assert.equal(COLUMNS.indexOf("website"), 7);
+  assert.equal(splitCsv(first)[COLUMNS.indexOf("venue")], 'The "Edge"');
 });
+
+/** Split one CSV line, respecting quotes — a naive split(",") breaks on venues. */
+function splitCsv(line: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (quoted) {
+      if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else cur += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ",") { out.push(cur); cur = ""; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
 
 test("csv emits a header even with no rows", () => {
   assert.ok(toCsv([]).includes("name,start_local,organizer"));
@@ -177,7 +208,8 @@ test("Excel formula characters are neutralised, so a phone number stays a phone 
   const csv = toCsv([{
     source: "meetup", name: "n", url: "u", startUtc: "", startLocal: "2026-09-27",
     startPrecision: "date", end: null, online: false, lat: null, lng: null, venue: "=Escape Hunt",
-    address: "+66 2 656 1000", organizer: null, organizerUrl: null,
+    address: "+66 2 656 1000", organizer: null, organizerUrl: null, performer: null, image: null,
+    phone: null, website: null, located: false,
   }]);
   const row = csv.split("\r\n")[1];
   assert.ok(!/,=Escape/.test(row), "a leading = must not reach Excel bare");
@@ -232,4 +264,90 @@ test("coordinates come from the same entry as the venue name", () => {
   }).event;
   assert.equal(e.venue, "Nimman Coworking");
   assert.equal(e.lat, null, "must not borrow the other entry's pin");
+});
+
+test("extracts Event subtypes, not just a bare Event", () => {
+  const html = `<script type="application/ld+json">${JSON.stringify([
+    { "@type": "MusicEvent", name: "Gig", startDate: "2026-09-27T18:30:00" },
+    { "@type": "https://schema.org/TheaterEvent", name: "Play", startDate: "2026-09-28T19:00:00" },
+    { "@type": "Organization", name: "Not an event" },
+  ])}</script>`;
+  assert.deepEqual(
+    extractEvents(html).map((e) => e.name),
+    ["Gig", "Play"],
+  );
+});
+
+test("rejects a venue outside the city, however the source labels it", () => {
+  const pai = {
+    "@type": "Event",
+    name: "Retreat in Pai",
+    startDate: "2026-09-28T10:00:00+07:00",
+    location: {
+      "@type": "Place",
+      name: "The Nest Pai",
+      // allevents stamps the city on every address, so only the geo gives it away.
+      address: "Pai, Mae Hong Son, Chiang Mai, CM",
+      geo: { latitude: 19.3583, longitude: 98.4406 },
+    },
+  };
+  const opts = {
+    now: new Date("2026-09-26T00:00:00+07:00"),
+    to: new Date("2026-10-03T23:59:59+07:00"),
+    centre: { lat: 18.7883, lng: 98.9853, radiusKm: 75 },
+  };
+  const out = filterEvents([{ raw: pai, source: "allevents" }], opts);
+  assert.equal(out.events.length, 0);
+  assert.equal(out.dropped.farAway, 1);
+  // Without a centre the same event is kept: the rule is opt-in, not a silent global.
+  assert.equal(filterEvents([{ raw: pai, source: "allevents" }], { now: opts.now, to: opts.to }).events.length, 1);
+});
+
+test("an event image is made absolute, and a shared placeholder is not used", () => {
+  const img = (image: unknown, url = "https://www.meetup.com/g/events/123/") =>
+    normalize({ "@type": "Event", name: "E", url, startDate: "2026-09-28", image }).event.image;
+  assert.equal(
+    img("/images/event/highres.webp"),
+    "https://www.meetup.com/images/event/highres.webp",
+    "a site-relative path resolves against the event url",
+  );
+  assert.equal(img("/images/fallbacks/group-cover.webp"), null, "the group placeholder is not this event");
+  assert.equal(img("https://img.evbuc.com/x.jpg"), "https://img.evbuc.com/x.jpg", "absolute is left alone");
+  assert.equal(img({ "@type": "ImageObject", url: "https://cdn/x.jpg" }), "https://cdn/x.jpg");
+  assert.equal(img(["/images/fallbacks/a.webp", "https://cdn/b.jpg"]), "https://cdn/b.jpg", "skips to a real one");
+  assert.equal(img("javascript:alert(1)"), null, "a scraped scheme never reaches the markup");
+  assert.equal(img("/images/x.webp", ""), null, "no base to resolve against is a missing image");
+});
+
+test("schema.org dates keep Bangkok's offset and never invent a midnight", () => {
+  // A date-only listing rendered as UTC became 17:00 on the PREVIOUS day.
+  assert.equal(toSchema("2026-09-30", "date"), "2026-09-30");
+  assert.equal(toSchema("2026-09-30 19:00", "datetime"), "2026-09-30T19:00:00+07:00");
+  assert.ok(!toSchema("2026-09-30", "date").includes("T"), "a bare date stays bare");
+  assert.ok(!toSchema("2026-09-30 19:00", "datetime").endsWith("Z"), "never export UTC");
+});
+
+test("html entities are decoded out of scraped text", () => {
+  const name = (n: string) =>
+    normalize({ "@type": "Event", name: n, url: "https://x/1", startDate: "2026-09-28" }).event.name;
+  assert.equal(name("Minimal&amp;Techno Vinyl Sessions"), "Minimal&Techno Vinyl Sessions");
+  assert.equal(name("&quot;Echoes&quot; &#8212; a show"), '"Echoes" — a show');
+  assert.equal(name("Caf&#xe9; night"), "Café night");
+  assert.equal(name("&amp;amp;"), "&amp;", "one pass only: the source escaped a literal entity");
+  assert.equal(name("Q&A with Bob"), "Q&A with Bob", "a bare ampersand is left alone");
+  assert.equal(name("&#0;null"), "&#0;null", "a control character is not decoded");
+});
+
+test("an image candidate that google cannot use is skipped, not fatal", () => {
+  const img = (image: unknown) =>
+    normalize({ "@type": "Event", name: "E", url: "https://m.com/e/1", startDate: "2026-09-28", image })
+      .event.image;
+  assert.equal(
+    img(["data:image/gif;base64,R0lGOD", "https://cdn/real.jpg"]),
+    "https://cdn/real.jpg",
+    "a lazy-load placeholder must not discard the real asset",
+  );
+  assert.equal(img("https://cdn-ip.allevents.in/x.avif"), null, "google does not accept avif");
+  assert.equal(img(["https://cdn/x.avif", "https://cdn/y.png"]), "https://cdn/y.png", "skips to a usable format");
+  assert.equal(img("https://img.evbuc.com/x?w=512"), "https://img.evbuc.com/x?w=512", "no extension is still usable");
 });

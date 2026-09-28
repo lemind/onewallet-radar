@@ -40,3 +40,16 @@ export function toLocal(d: Date, precision: "date" | "datetime" = "datetime"): s
   const full = FMT.format(d);
   return precision === "date" ? full.slice(0, 10) : full;
 }
+
+// Thailand has observed +07:00 with no DST since 1920, so the offset is a constant.
+const OFFSET = "+07:00";
+
+/**
+ * A start/end for schema.org. A bare date stays bare and a time carries
+ * Bangkok's offset, so the markup never states a time the source did not
+ * publish and never shifts an event onto the previous day. See SPEC.md 7.1.
+ */
+export function toSchema(startLocal: string, precision: "date" | "datetime"): string {
+  if (precision === "date") return startLocal.slice(0, 10);
+  return `${startLocal.slice(0, 16).replace(" ", "T")}:00${OFFSET}`;
+}

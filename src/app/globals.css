@@ -5,10 +5,10 @@
   --muted: #6b6b6b;
   --line: #e2e0dc;
   --card: #ffffff;
-  /* Brand orange, taken from the logo. */
-  --brand: #ff5b00;
+  /* Brand orange, matching the logo on onewallet.co.th. */
+  --brand: #ff5c00;
   --brand-hover: #e64f00;
-  /* White on #ff5b00 is 3.1:1 — fine for a bold button label, too low for body
+  /* White on #ff5c00 is 3.1:1 — fine for a bold button label, too low for body
      text, so links use a darker shade that clears 5:1 on the light ground. */
   --accent: #c2410c;
 }
@@ -36,7 +36,19 @@ body {
   font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-.wrap { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; }
+/* Column layout so the footer sits at the bottom of the viewport on a short
+   page, instead of floating under the form beside the city links. Only
+   .content and .foot are flex items, so margins still collapse inside. */
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 16px 24px;
+  min-height: 100vh;
+  min-height: 100dvh; /* the mobile toolbar makes 100vh overshoot */
+  display: flex;
+  flex-direction: column;
+}
+.content { flex: 1 0 auto; }
 
 .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .brand img { height: 22px; width: auto; display: block; }
@@ -65,6 +77,9 @@ button {
   background: var(--brand); color: #fff; cursor: pointer;
   transition: background 120ms ease;
 }
+/* Hold the width: the label becomes the shorter "Searching…" on submit, and
+   the button would otherwise shrink under the cursor on every search. */
+form button[type="submit"] { min-width: 132px; }
 button:hover:not(:disabled) { background: var(--brand-hover); }
 button:disabled { opacity: 0.55; cursor: default; }
 button.ghost {
@@ -88,6 +103,8 @@ select:focus, input:focus { outline: 2px solid var(--brand); outline-offset: 1px
 .mapwrap { margin-bottom: 14px; }
 .map { height: 340px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
 .map a { color: var(--accent); }
+.pev { margin: 6px 0 0; padding-left: 16px; }
+.pev li { margin: 2px 0; }
 .maplegend { color: var(--muted); font-size: 12px; margin: 6px 2px 0; }
 @media (max-width: 480px) { .map { height: 260px; } }
 
@@ -108,3 +125,95 @@ a { color: var(--accent); }
   label, select, input[type="date"], button { width: 100%; min-width: 0; }
   th, td { padding: 8px 10px; }
 }
+
+.foot {
+  margin-top: 40px;
+  padding-top: 16px;
+  text-align: right;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+.foot a { color: var(--accent); }
+
+/* Readable by screen readers and crawlers, invisible on screen. */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.crumbs { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+.crumbs a { color: var(--accent); }
+.citynav { margin-top: 28px; font-size: 14px; color: var(--muted); }
+.citynav a { color: var(--accent); }
+.evlist { padding-left: 20px; margin: 0 0 28px; }
+.evlist li { margin-bottom: 14px; }
+.evlist h3 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
+.evlist h3 a { color: var(--fg); }
+.evmeta { margin: 0; font-size: 13px; color: var(--muted); }
+.taglist { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 28px; list-style: none; }
+.taglist li a { color: var(--accent); text-decoration: none; }
+.taglist li a:hover { text-decoration: underline; }
+/* How many listings sit behind the name: the repeat venues are the better leads. */
+.tagn {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--line);
+  color: var(--muted);
+  font-size: 11px;
+}
+/* An anchored event gets a moment of highlight so the jump is visible. */
+.evlist li:target h3 a { text-decoration: underline; }
+.evlist li:target { scroll-margin-top: 16px; }
+.taglist li {
+  font-size: 13px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+}
+
+.maplegend .key { margin-right: 14px; white-space: nowrap; }
+/* Shared by the map legend and the table's When column. */
+.dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: baseline;
+  border: 1px solid var(--card);
+}
+
+/* The /events hub: a card per city, stacked. */
+.hublist { padding: 0; margin: 0 0 28px; list-style: none; }
+.hublist li {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+.hublist h3 { margin: 0 0 4px; font-size: 16px; }
+.hublist h3 a { color: var(--accent); }
+.hublist p { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* Body copy, on the home page and the hub. The page is 1100px wide; a line of
+   prose that long is unreadable, so the measure is capped independently. */
+.prose p { max-width: 78ch; }
+/* .note is a bordered card, not body copy, and capping it shrinks the box. */
+.prose .note { max-width: none; }
+/* Quieter than the tool it sits under: this is for readers and crawlers. */
+.about { margin-top: 32px; border-top: 1px solid var(--line); padding-top: 8px; }
+.about h2 { font-size: 15px; margin: 20px 0 6px; }
+.about p { margin: 0; font-size: 14px; color: var(--muted); }
+.about a { color: var(--accent); }
