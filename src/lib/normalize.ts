@@ -78,7 +78,7 @@ function canonicalUrl(u: string): string {
 // HACK(allevents): the city page carries the surrounding region and stamps ", Chiang Mai, CM" on every address, so a Pai retreat 85km away reads as local. Measured 26 Sep. Radius per city in cities.ts.
 // REVISIT: drop this and the radiusKm field if allevents ever files events under their own province.
 /** Great-circle distance, used only to reject a listing filed under the wrong city. */
-function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+export function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const r = Math.PI / 180;
   const dLat = (bLat - aLat) * r;
   const dLng = (bLng - aLng) * r;
@@ -121,6 +121,9 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
       online: isOnline(raw.eventAttendanceMode),
       lat,
       lng,
+      phone: null,
+      website: null,
+      located: false,
       // str(org), not str(raw.organizer): first() already unwrapped the array, and
       // an array reaching str() is rejected, losing the organizer and the lead.
       organizer: orgName,

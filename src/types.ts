@@ -19,6 +19,11 @@ export type Event = {
   organizerUrl: string | null;
   /** Who is playing, where the source says so. Bandsintown and RA publish it. */
   performer: string | null;
+  /** From Google Places, for venues the source left unplaced. See SPEC.md 9.4. */
+  phone: string | null;
+  website: string | null;
+  /** True when the coordinates came from Places rather than the source. */
+  located: boolean;
   /** True when the source says it is online-only: an organizer lead, no venue. */
   online: boolean;
   /** Venue coordinates where the source publishes them; Meetup never does. */

@@ -164,18 +164,23 @@ key at all. Raster tiles bake the label language into the image and OSM renders
 Thailand in Thai, so every street read as ถนน… on an English page. No keyless
 provider publishes English labels for Thailand; eight were measured.
 
-The basemap is now MapTiler vector tiles drawn by MapLibre GL, with
-`language=en` so labels use `name:en` and fall back to the local name only
-where OpenStreetMap has no English one. This needs a free MapTiler key — email
-signup, no card — supplied as `NEXT_PUBLIC_MAPTILER_KEY`. The key is public by
-construction, so it must be origin-restricted in the MapTiler dashboard.
+MapTiler vector tiles were tried first and reached most of the way, but fell
+back to Thai wherever OpenStreetMap carries no `name:en`.
 
-Leaflet still draws the markers, so the pins, popups and colours are unchanged.
-MapLibre needs WebGL; without it the map reports itself as unavailable and the
-table is unaffected.
+**Changed 28 Sep.** The basemap is Google Maps, which labels in whatever
+language it is asked for, so the streets read in English throughout. It needs
+`NEXT_PUBLIC_GOOGLE_MAPS_KEY` and a Google Cloud project with billing enabled —
+a card is required even though the volume sits inside the free monthly
+allowance of 10,000 map loads. The key is public by construction and should be
+restricted to the site's domain.
+
+Pins are one per venue, green for today and blue for later, with the same
+colours in the table's When column. A rejected key reports through
+`gm_authFailure`, so the map says it is unavailable rather than sitting grey.
 
 Eventbrite and Luma publish venue coordinates; Meetup publishes a street address
-but none, so those leads appear in the table and not on the map. The legend says
+but none, and RA's are rounded to whole degrees and therefore unusable. Those
+gaps are now closed by the Places lookup in §9.4. The legend says
 how many are shown. Closing that gap needs paid geocoding and is not planned.
 
 ### 6.2 Volume ceiling
@@ -353,6 +358,28 @@ The source brief asks for vendors and sponsors per event. This data is not
 published for meetups or provincial festivals, and only sporadically for large
 conferences. **Venue and organizer are the real outputs.** Any UI promising
 vendors will show an empty panel.
+
+### 9.4a Venue lookup — built 28 Sep
+
+Sources that publish an address but no coordinates left most leads off the map:
+Meetup never publishes them, and RA's are rounded to whole degrees, which would
+place a Bangkok venue some 60km out.
+
+Measured over 84 unplaced leads across the three cities: Google Places located
+84 with none wrong. MapTiler's geocoder managed 48 and placed 29 somewhere
+wrong — an address geocoder falls back to a district or postcode centroid and
+reports it as the venue, which is the "wrong phone number is worse than a
+missing one" failure in map form. Places returns real businesses, so it does
+not have that failure mode.
+
+The lookup runs after filtering, so a call is only spent on a lead that
+survived, and results are cached for 30 days — a venue does not move. Without
+the cache the hourly page rebuild would make roughly 60,000 calls a month
+against a 10,000 free tier, which is the difference between nothing and about
+$1,600 a month. Failures are never cached; only real answers are.
+
+The same call returns the venue's phone number and website, which fill the
+contact columns in the export.
 
 ### 9.4 District is enrichment-only, and therefore a column
 

@@ -2,7 +2,8 @@ import { findCity } from "./cities.ts";
 import { fetchAll, type FetchAllResult, type RawEvent } from "./ldjson.ts";
 import { fetchRa } from "./ra.ts";
 import { SOURCES, urlsFor } from "./sources.ts";
-import { filterEvents } from "./normalize.ts";
+import { distanceKm, filterEvents } from "./normalize.ts";
+import { lookup, queryFor } from "./places.ts";
 import type { CityId, RunResult, Source, SourceError } from "../types.ts";
 
 /** Fatal for a run. Carries the per-source errors, which are the whole diagnostic. */
@@ -88,12 +89,42 @@ export async function runCity(
     to: toDate,
     centre: { lat: city.lat, lng: city.lng, radiusKm: city.radiusKm },
   });
+
+  // Place the leads the sources left unplaced. After filtering, so a lookup is
+  // only spent on an event that survived; cached for 30 days in places.ts.
+  const drop = new Set<(typeof events)[number]>();
+  const unplaced = events.filter((e) => e.lat == null && (e.venue || e.address));
+  if (unplaced.length > 0) {
+    const found = await lookup(
+      unplaced.map((e) => queryFor(e.venue, e.address)),
+      city.id,
+    );
+    for (const e of unplaced) {
+      const p = found.get(queryFor(e.venue, e.address));
+      if (!p) continue;
+      // The radius check in filterEvents ran before we had these coordinates,
+      // so apply it here too: a venue Places puts in the next province is the
+      // same mis-filing the rule exists to catch.
+      if (distanceKm(city.lat, city.lng, p.lat, p.lng) > city.radiusKm) {
+        dropped.farAway++;
+        drop.add(e);
+        continue;
+      }
+      e.lat = p.lat;
+      e.lng = p.lng;
+      e.phone = p.phone;
+      e.website = p.website;
+      e.located = true;
+    }
+  }
+  const kept = drop.size > 0 ? events.filter((e) => !drop.has(e)) : events;
+
   return {
     city: city.id,
     from,
     to,
     fetchedAt: new Date().toISOString(),
-    events,
+    events: kept,
     dropped,
     errors,
     notices,
