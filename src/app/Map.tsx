@@ -108,7 +108,12 @@ export default function Map({ events }: { events: Event[] }) {
         map.current ??= new google.maps.Map(box.current, {
           mapTypeControl: false,
           streetViewControl: false,
+          // The wheel stays with the page, so the buttons are the only way to
+          // zoom. Google hides the default zoom control on a map this short,
+          // so ask for it explicitly. Measured 28 Sep on the 340px map.
           scrollwheel: false,
+          zoomControl: true,
+          zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
           maxZoom: 19,
         });
         // Markers belong to the map, not the run: clear the previous search's.
