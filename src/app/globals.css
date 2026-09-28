@@ -176,3 +176,25 @@ a { color: var(--accent); }
   vertical-align: baseline;
   border: 1px solid var(--card);
 }
+
+/* The /events hub: a card per city, stacked. */
+.hublist { padding: 0; margin: 0 0 28px; list-style: none; }
+.hublist li {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+.hublist h3 { margin: 0 0 4px; font-size: 16px; }
+.hublist h3 a { color: var(--accent); }
+.hublist p { margin: 0; font-size: 14px; color: var(--muted); max-width: 78ch; }
+
+/* Body copy, on the home page and the hub. The page is 1100px wide; a line of
+   prose that long is unreadable, so the measure is capped independently. */
+.prose p { max-width: 78ch; }
+/* Quieter than the tool it sits under: this is for readers and crawlers. */
+.about { margin-top: 32px; border-top: 1px solid var(--line); padding-top: 8px; }
+.about h2 { font-size: 15px; margin: 20px 0 6px; }
+.about p { margin: 0; font-size: 14px; color: var(--muted); }
+.about a { color: var(--accent); }

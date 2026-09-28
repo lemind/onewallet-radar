@@ -6,7 +6,7 @@ import { CITY_COPY } from "../../../lib/city-copy.ts";
 import { ldScript } from "../../../lib/jsonld.ts";
 import { httpUrl } from "../../../lib/url.ts";
 import { runCity } from "../../../lib/run.ts";
-import { SITE, BRAND, BRAND_SITE } from "../../../lib/site.ts";
+import { SITE, BRAND, BRAND_SITE, OG_ALT } from "../../../lib/site.ts";
 import { parseStart, toLocal } from "../../../lib/time.ts";
 import type { CityId, Event } from "../../../types.ts";
 
@@ -61,12 +61,16 @@ export async function generateMetadata({
     `Upcoming events in ${city.label}, Thailand: concerts, club nights, festivals, ` +
     `markets, workshops and meetups, with the venue and organizer behind each one.`;
   const url = `${SITE}/events/${city.id}`;
+  // Declaring openGraph here replaces the root block, and the generated image
+  // does not come with it — so name it. Without this the three pages that
+  // carry the content shared as a blank card. Measured 28 Sep.
+  const images = [{ url: "/opengraph-image", width: 1200, height: 630, alt: OG_ALT }];
   return {
     title: { absolute: title },
     description,
     alternates: { canonical: `/events/${city.id}` },
-    openGraph: { title, description, url, type: "website" },
-    twitter: { card: "summary_large_image", title, description },
+    openGraph: { title, description, url, type: "website", images },
+    twitter: { card: "summary_large_image", title, description, images },
   };
 }
 
@@ -95,6 +99,9 @@ function eventLd(e: Event, city: string) {
     name: e.name,
     description: eventDescription(e, city),
     startDate: e.startUtc || undefined,
+    // Recommended by Google for Event results, and the difference between a
+    // picture in the listing and a bare line. Only what the source published.
+    ...(e.image ? { image: e.image } : {}),
     // Published where the source gives one; never guessed from a duration.
     endDate: endDate(e.end),
     ...(e.performer
@@ -137,9 +144,10 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: SITE },
+          { "@type": "ListItem", position: 2, name: "Events in Thailand", item: `${SITE}/events` },
           {
             "@type": "ListItem",
-            position: 2,
+            position: 3,
             name: `Events in ${city.label}`,
             item: `${SITE}/events/${city.id}`,
           },
@@ -160,9 +168,11 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
 
   return (
     <main className="wrap">
-      <div className="content">
+      <div className="content prose">
       <nav className="crumbs">
-        <Link href="/">{BRAND} Radar</Link> <span aria-hidden>›</span> Events in {city.label}
+        <Link href="/">{BRAND} Radar</Link> <span aria-hidden>›</span>{" "}
+        <Link href="/events">Events in Thailand</Link> <span aria-hidden>›</span> Events in{" "}
+        {city.label}
       </nav>
 
       <h1>Events in {city.label}</h1>
@@ -249,6 +259,9 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
             <Link href={`/events/${c.id}`}>Events in {c.label}</Link>
           </li>
         ))}
+        <li>
+          <Link href="/events">All cities</Link>
+        </li>
       </ul>
 
       </div>

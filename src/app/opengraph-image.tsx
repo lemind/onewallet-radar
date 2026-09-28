@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
+import { OG_ALT } from "../lib/site.ts";
 
-export const alt = "One Wallet Radar — event, venue and organizer leads in Thailand";
+export const alt = OG_ALT;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

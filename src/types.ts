@@ -19,6 +19,8 @@ export type Event = {
   organizerUrl: string | null;
   /** Who is playing, where the source says so. Bandsintown and RA publish it. */
   performer: string | null;
+  /** Event photo the source published, absolute. For structured data only — never exported. */
+  image: string | null;
   /** From Google Places, for venues the source left unplaced. See SPEC.md 9.4. */
   phone: string | null;
   website: string | null;

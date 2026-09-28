@@ -1,6 +1,7 @@
 import type { Event, DroppedCounts, Source } from "../types.ts";
 import type { RawEvent } from "./ldjson.ts";
 import { parseStart, toLocal } from "./time.ts";
+import { httpUrl } from "./url.ts";
 
 function str(v: unknown): string | null {
   return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
@@ -54,6 +55,26 @@ function flatAddress(loc: unknown): { venue: string | null; address: string | nu
   return { venue, address: null };
 }
 
+// HACK(meetup): an event with no photo of its own is given the group cover under
+// /fallbacks/, which pictures nothing about the event. Measured 28 Sep: 12/12 Chiang Mai.
+// REVISIT: drop the filter if meetup stops serving a shared placeholder.
+const PLACEHOLDER = /\/fallbacks?\//i;
+
+/** The photo for the Event structured data: schema.org allows a string, an array or an ImageObject. */
+function imageOf(raw: RawEvent, eventUrl: string): string | null {
+  for (const c of Array.isArray(raw.image) ? raw.image : [raw.image]) {
+    const src = c && typeof c === "object" ? str((c as Record<string, unknown>).url) : str(c);
+    if (!src || PLACEHOLDER.test(src)) continue;
+    try {
+      // Meetup publishes a site-relative path, so resolve against the event url.
+      return httpUrl(new URL(src, eventUrl || undefined).toString());
+    } catch {
+      continue; // an image we cannot resolve is a missing one, not a broken page
+    }
+  }
+  return null;
+}
+
 function isOnline(v: unknown): boolean {
   // schema.org allows a string or an array; the prototype assumed a string and crashed.
   const vals = Array.isArray(v) ? v : [v];
@@ -105,13 +126,14 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
     .map((pf) => (pf && typeof pf === "object" ? str((pf as Record<string, unknown>).name) : str(pf)))
     .filter(Boolean);
   const parsed = parseStart(raw.startDate);
+  const url = str(raw.url) ?? "";
   return {
     online: isOnline(raw.eventAttendanceMode),
     start: parsed ? parsed.at : null,
     event: {
       source,
       name: str(raw.name) ?? "",
-      url: str(raw.url) ?? "",
+      url,
       startUtc: parsed ? parsed.at.toISOString() : "",
       startLocal: parsed ? toLocal(parsed.at, parsed.precision) : "",
       startPrecision: parsed ? parsed.precision : "datetime",
@@ -134,6 +156,8 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
         const p = performers.length ? performers.join(", ") : null;
         return p && p !== orgName ? p : null;
       })(),
+      // Google shows an Event result with a picture and a bare line without one.
+      image: imageOf(raw, url),
       // Name and link move together: a link with no name beside it is the
       // partial fill SPEC.md 9.9 forbids, and renders as an empty anchor.
       organizerUrl: orgName && org && typeof org === "object" ? str(org.url) : null,

@@ -14,6 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     // No trailing slash: this must match the canonical the page emits exactly.
     { url: SITE, lastModified },
+    { url: `${SITE}/events`, lastModified },
     ...CITIES.map((c) => ({ url: `${SITE}/events/${c.id}`, lastModified })),
   ];
 }

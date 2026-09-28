@@ -164,14 +164,53 @@ export default function Page() {
       )}
 
       <nav className="citynav">
-        Browse what's on:{" "}
-        {CITIES.map((c, i) => (
+        Browse what's on: <a href="/events">Events in Thailand</a>
+        {CITIES.map((c) => (
           <span key={c.id}>
-            {i > 0 && " · "}
+            {" · "}
             <a href={`/events/${c.id}`}>Events in {c.label}</a>
           </span>
         ))}
       </nav>
+
+      {/* The form above renders as three inputs and nothing else, which gave a
+          crawler 58 words to judge the site's own home page on. Measured 28 Sep. */}
+      <section className="about prose">
+        <h2>What this is</h2>
+        <p>
+          Radar collects events that are already published — on Meetup, Eventbrite, Luma,
+          AllEvents and Resident Advisor — and puts the businesses behind them in one list. Pick a
+          city and a date range and you get every event running in that window with the venue
+          hosting it, the organizer running it, an address, a map pin and, where we can match the
+          venue, a phone number and a website. The whole result downloads as a spreadsheet.
+        </p>
+
+        <h2>Why venues and organizers</h2>
+        <p>
+          A bar that hosts four nights a month and the promoter who fills it are both taking
+          payments from visitors, and neither of them appears on any list of businesses to
+          approach. The events are how you find them. A venue that keeps showing up across a
+          month's listings is a stronger lead than the same venue found once.
+        </p>
+
+        <h2>What it will not do</h2>
+        <p>
+          Nothing here is written by hand and no detail is inferred. An event whose organizer
+          published a date but no start time is shown as a date, not as midnight. A venue we
+          cannot match confidently is left without a phone number rather than given someone
+          else's. Every row keeps a link to the listing it came from, so anything can be checked
+          at the source.
+        </p>
+
+        <h2>Cities covered</h2>
+        <p>
+          <a href="/events/bangkok">Bangkok</a> has the deepest calendar in the country and two
+          separate markets inside it. <a href="/events/chiang-mai">Chiang Mai</a> runs the
+          busiest weekday programme, driven by its remote-working population.{" "}
+          <a href="/events/phuket">Phuket</a> is beach-club and resort led, and its season
+          follows the flight schedule. <a href="/events">All three are listed here</a>.
+        </p>
+      </section>
 
       </div>
 

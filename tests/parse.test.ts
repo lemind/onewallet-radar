@@ -97,6 +97,7 @@ test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
       organizer: null,
       organizerUrl: null,
       performer: null,
+      image: null,
       phone: null,
       website: null,
       located: false,
@@ -207,7 +208,7 @@ test("Excel formula characters are neutralised, so a phone number stays a phone 
   const csv = toCsv([{
     source: "meetup", name: "n", url: "u", startUtc: "", startLocal: "2026-09-27",
     startPrecision: "date", end: null, online: false, lat: null, lng: null, venue: "=Escape Hunt",
-    address: "+66 2 656 1000", organizer: null, organizerUrl: null, performer: null,
+    address: "+66 2 656 1000", organizer: null, organizerUrl: null, performer: null, image: null,
     phone: null, website: null, located: false,
   }]);
   const row = csv.split("\r\n")[1];
@@ -300,4 +301,20 @@ test("rejects a venue outside the city, however the source labels it", () => {
   assert.equal(out.dropped.farAway, 1);
   // Without a centre the same event is kept: the rule is opt-in, not a silent global.
   assert.equal(filterEvents([{ raw: pai, source: "allevents" }], { now: opts.now, to: opts.to }).events.length, 1);
+});
+
+test("an event image is made absolute, and a shared placeholder is not used", () => {
+  const img = (image: unknown, url = "https://www.meetup.com/g/events/123/") =>
+    normalize({ "@type": "Event", name: "E", url, startDate: "2026-09-28", image }).event.image;
+  assert.equal(
+    img("/images/event/highres.webp"),
+    "https://www.meetup.com/images/event/highres.webp",
+    "a site-relative path resolves against the event url",
+  );
+  assert.equal(img("/images/fallbacks/group-cover.webp"), null, "the group placeholder is not this event");
+  assert.equal(img("https://img.evbuc.com/x.jpg"), "https://img.evbuc.com/x.jpg", "absolute is left alone");
+  assert.equal(img({ "@type": "ImageObject", url: "https://cdn/x.jpg" }), "https://cdn/x.jpg");
+  assert.equal(img(["/images/fallbacks/a.webp", "https://cdn/b.jpg"]), "https://cdn/b.jpg", "skips to a real one");
+  assert.equal(img("javascript:alert(1)"), null, "a scraped scheme never reaches the markup");
+  assert.equal(img("/images/x.webp", ""), null, "no base to resolve against is a missing image");
 });

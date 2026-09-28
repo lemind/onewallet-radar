@@ -1,8 +1,21 @@
 import type { CityId } from "../types.ts";
 
 /** Written copy per city. Search engines reward text a person wrote over a list of rows. */
-export const CITY_COPY: Record<CityId, { intro: string; scene: string; when: string }> = {
+export const CITY_COPY: Record<
+  CityId,
+  {
+    intro: string;
+    scene: string;
+    when: string;
+    /** One line for the /events hub. Written separately so the two pages never duplicate each other. */
+    teaser: string;
+  }
+> = {
   "chiang-mai": {
+    teaser:
+      "The densest weekday calendar in Thailand, driven by a large remote-working population: "
+      + "coworking socials and founder nights around Nimman, live music off Loi Kroh, temple "
+      + "markets, and wellness retreats in the valleys outside town.",
     intro:
       "Chiang Mai runs a smaller and more seasonal event calendar than Bangkok, but a denser one " +
       "than its size suggests. The old city and the Nimmanhaemin district carry most of it: " +
@@ -22,6 +35,9 @@ export const CITY_COPY: Record<CityId, { intro: string; scene: string; when: str
       "months from June to September are the quietest, and listings thin out accordingly.",
   },
   bangkok: {
+    teaser:
+      "The deepest calendar in the country, and two markets in one city: promoter-led club nights "
+      + "along Sukhumvit, Thonglor and Ekkamai, and venue-led trade shows at BITEC, QSNCC and IMPACT.",
     intro:
       "Bangkok has the deepest event calendar in Thailand by a wide margin, and it is the only " +
       "Thai city with a year-round electronic music scene substantial enough to sustain " +
@@ -41,6 +57,10 @@ export const CITY_COPY: Record<CityId, { intro: string; scene: string; when: str
       "window.",
   },
   phuket: {
+    teaser:
+      "Beach-club and resort driven, and tourism-facing throughout. Patong carries the nightlife, "
+      + "the west-coast clubs from Kamala to Kata are the island's main music venues, and Phuket "
+      + "Town runs the markets and festivals.",
     intro:
       "Phuket's calendar is beach-club and resort driven, and more concentrated than the other " +
       "two cities — both in geography and in time. Patong carries the nightlife, while the " +
