@@ -157,6 +157,20 @@ a { color: var(--accent); }
 .evlist h3 a { color: var(--fg); }
 .evmeta { margin: 0; font-size: 13px; color: var(--muted); }
 .taglist { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 28px; list-style: none; }
+.taglist li a { color: var(--accent); text-decoration: none; }
+.taglist li a:hover { text-decoration: underline; }
+/* How many listings sit behind the name: the repeat venues are the better leads. */
+.tagn {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--line);
+  color: var(--muted);
+  font-size: 11px;
+}
+/* An anchored event gets a moment of highlight so the jump is visible. */
+.evlist li:target h3 a { text-decoration: underline; }
+.evlist li:target { scroll-margin-top: 16px; }
 .taglist li {
   font-size: 13px;
   padding: 4px 10px;

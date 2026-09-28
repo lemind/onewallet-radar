@@ -84,6 +84,48 @@ function endDate(end: string | null): string | undefined {
   return p ? toSchema(toLocal(p.at, p.precision), p.precision) : undefined;
 }
 
+/** Where a venue's tag points: the first listing it holds on this page. */
+function anchor(i: number): string {
+  return `ev-${i + 1}`;
+}
+
+/**
+ * One entry per distinct venue or organizer, in the order they first appear,
+ * carrying where to jump to and how many listings sit behind the name. The
+ * repeat names are the stronger leads, so the count is worth showing.
+ */
+type Group = {
+  name: string;
+  first: number;
+  count: number;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  url: string | null;
+};
+
+function groupBy(events: Event[], key: (e: Event) => string | null): Group[] {
+  const out = new Map<string, Group>();
+  events.forEach((e, i) => {
+    const name = key(e);
+    if (!name) return;
+    const g = out.get(name);
+    if (!g) {
+      out.set(name, {
+        name, first: i, count: 1,
+        address: e.address, lat: e.lat, lng: e.lng, url: e.organizerUrl,
+      });
+      return;
+    }
+    g.count++;
+    // Fill a blank from a later listing at the same place; never overwrite one.
+    g.address ??= e.address;
+    g.url ??= e.organizerUrl;
+    if (g.lat == null) { g.lat = e.lat; g.lng = e.lng; }
+  });
+  return [...out.values()];
+}
+
 /** A sentence built only from fields we hold. Nothing here is invented. */
 function eventDescription(e: Event, city: string): string {
   const where = e.online ? "Online" : (e.venue ?? e.address ?? city);
@@ -92,7 +134,7 @@ function eventDescription(e: Event, city: string): string {
   return `${e.name} — ${e.startLocal} at ${where}, ${city}, Thailand${who}${acts}.`;
 }
 
-function eventLd(e: Event, city: string) {
+function eventLd(e: Event, city: string, ids: { venue?: string; organizer?: string }) {
   return {
     "@type": "Event",
     name: e.name,
@@ -117,13 +159,24 @@ function eventLd(e: Event, city: string) {
       ? { "@type": "VirtualLocation", url: httpUrl(e.url) ?? undefined }
       : {
           "@type": "Place",
+          // The same @id as the venue node below, so the graph holds one place
+          // hosting several events rather than several places sharing a name.
+          ...(ids.venue ? { "@id": ids.venue } : {}),
           name: e.venue ?? city,
           address: e.address ?? `${city}, Thailand`,
           ...(e.lat != null && e.lng != null
             ? { geo: { "@type": "GeoCoordinates", latitude: e.lat, longitude: e.lng } }
             : {}),
         },
-    ...(e.organizer ? { organizer: { "@type": "Organization", name: e.organizer } } : {}),
+    ...(e.organizer
+      ? {
+          organizer: {
+            "@type": "Organization",
+            ...(ids.organizer ? { "@id": ids.organizer } : {}),
+            name: e.organizer,
+          },
+        }
+      : {}),
   };
 }
 
@@ -133,8 +186,12 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
 
   const { from, to } = window();
   const events = await load(city.id, from, to);
-  const venues = [...new Set(events.map((e) => e.venue).filter(Boolean))] as string[];
-  const organizers = [...new Set(events.map((e) => e.organizer).filter(Boolean))] as string[];
+  const venues = groupBy(events, (e) => e.venue);
+  const organizers = groupBy(events, (e) => e.organizer);
+  const base = `${SITE}/events/${city.id}`;
+  // Name -> node id, so an event's location and the venue node are one entity.
+  const venueId = new Map(venues.map((g) => [g.name, `${base}#venue-${g.first + 1}`]));
+  const organizerId = new Map(organizers.map((g) => [g.name, `${base}#organizer-${g.first + 1}`]));
   const others = CITIES.filter((c) => c.id !== city.id);
   const copy = CITY_COPY[city.id];
   const trail: Crumb[] = [
@@ -156,7 +213,46 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
         itemListElement: listed.map((e, i) => ({
           "@type": "ListItem",
           position: i + 1,
-          item: eventLd(e, city.label),
+          item: eventLd(e, city.label, {
+            venue: e.venue ? venueId.get(e.venue) : undefined,
+            organizer: e.organizer ? organizerId.get(e.organizer) : undefined,
+          }),
+        })),
+      },
+      // The venues and organizers as entities in their own right. Each is the
+      // same node the events above point at, so the graph states that one place
+      // hosts several listings rather than repeating a name.
+      {
+        "@type": "ItemList",
+        name: `Event venues in ${city.label}`,
+        numberOfItems: venues.length,
+        itemListElement: venues.map((g, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          item: {
+            "@type": "Place",
+            "@id": venueId.get(g.name),
+            name: g.name,
+            address: g.address ?? `${city.label}, Thailand`,
+            ...(g.lat != null && g.lng != null
+              ? { geo: { "@type": "GeoCoordinates", latitude: g.lat, longitude: g.lng } }
+              : {}),
+          },
+        })),
+      },
+      {
+        "@type": "ItemList",
+        name: `Event organizers in ${city.label}`,
+        numberOfItems: organizers.length,
+        itemListElement: organizers.map((g, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          item: {
+            "@type": "Organization",
+            "@id": organizerId.get(g.name),
+            name: g.name,
+            ...(httpUrl(g.url) ? { url: httpUrl(g.url)! } : {}),
+          },
         })),
       },
     ],
@@ -193,8 +289,8 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
         <p>No events are listed for {city.label} in this window. Try a wider range on the search page.</p>
       ) : (
         <ol className="evlist">
-          {events.map((e) => (
-            <li key={`${e.url}-${e.startUtc}`}>
+          {events.map((e, i) => (
+            <li key={`${e.url}-${e.startUtc}`} id={anchor(i)}>
               <h3>
                 {httpUrl(e.url) ? (
                   <a href={httpUrl(e.url)!} target="_blank" rel="noreferrer">
@@ -205,7 +301,10 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
                 )}
               </h3>
               <p className="evmeta">
-                <time dateTime={e.startUtc || undefined}>{e.startLocal}</time>
+                {/* The machine-readable value has to agree with the text beside it. */}
+                <time dateTime={e.startLocal ? toSchema(e.startLocal, e.startPrecision) : undefined}>
+                  {e.startLocal}
+                </time>
                 {e.venue && <> · {e.venue}</>}
                 {e.address && <> · {e.address}</>}
                 {e.organizer && <> · organized by {e.organizer}</>}
@@ -220,11 +319,15 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
           <h2>Event venues in {city.label}</h2>
           <p>
             These {venues.length} {venues.length === 1 ? "venue is" : "venues are"} hosting events in{" "}
-            {city.label} over the next {WINDOW_DAYS} days.
+            {city.label} over the next {WINDOW_DAYS} days. A venue hosting several is the stronger
+            lead.
           </p>
           <ul className="taglist">
-            {venues.map((v) => (
-              <li key={v}>{v}</li>
+            {venues.map((g) => (
+              <li key={g.name}>
+                <a href={`#${anchor(g.first)}`}>{g.name}</a>
+                {g.count > 1 && <span className="tagn">{g.count}</span>}
+              </li>
             ))}
           </ul>
         </>
@@ -237,8 +340,17 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
             Promoters, venues and communities currently running events in {city.label}.
           </p>
           <ul className="taglist">
-            {organizers.map((o) => (
-              <li key={o}>{o}</li>
+            {organizers.map((g) => (
+              <li key={g.name}>
+                {httpUrl(g.url) ? (
+                  <a href={httpUrl(g.url)!} target="_blank" rel="noreferrer">
+                    {g.name}
+                  </a>
+                ) : (
+                  <a href={`#${anchor(g.first)}`}>{g.name}</a>
+                )}
+                {g.count > 1 && <span className="tagn">{g.count}</span>}
+              </li>
             ))}
           </ul>
         </>
