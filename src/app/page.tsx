@@ -87,7 +87,7 @@ export default function Page() {
           To
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
-        <button type="submit" disabled={busy}>{busy ? "Searching…" : "Run"}</button>
+        <button type="submit" disabled={busy}>{busy ? "Searching…" : "Show events"}</button>
       </form>
 
       {error && <p className="note bad">Could not reach Meetup — {error}</p>}
