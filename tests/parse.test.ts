@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { extractEvents } from "../src/lib/ldjson.ts";
 import { normalize, filterEvents } from "../src/lib/normalize.ts";
 import { parseStart, toLocal } from "../src/lib/time.ts";
-import { toCsv } from "../src/lib/csv.ts";
+import { COLUMNS, toCsv } from "../src/lib/csv.ts";
 
 const HTML = readFileSync(new URL("./fixtures/meetup-chiang-mai.html", import.meta.url), "utf8");
 const RAW = extractEvents(HTML);
@@ -107,8 +107,34 @@ test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
   assert.ok(csv.includes('"17 Moonmuang Rd, Si Phum, Chiang Mai"'), "commas quoted");
   assert.ok(csv.includes('"The ""Edge"""'), "inner quotes doubled");
   assert.ok(csv.includes("\r\n"));
-  assert.equal(csv.split("\r\n")[1].split(",").length > 0, true);
+  // A header and a row that disagree shift every cell silently, and the old
+  // assertion here (length > 0) was true of any string at all.
+  const [header, first] = csv.replace("\ufeff", "").split("\r\n");
+  assert.equal(header.split(",").length, COLUMNS.length, "header width");
+  assert.equal(splitCsv(first).length, COLUMNS.length, "row width matches header");
+  assert.equal(COLUMNS.indexOf("phone"), 6);
+  assert.equal(COLUMNS.indexOf("website"), 7);
+  assert.equal(splitCsv(first)[COLUMNS.indexOf("venue")], 'The "Edge"');
 });
+
+/** Split one CSV line, respecting quotes — a naive split(",") breaks on venues. */
+function splitCsv(line: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (quoted) {
+      if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else cur += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ",") { out.push(cur); cur = ""; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
 
 test("csv emits a header even with no rows", () => {
   assert.ok(toCsv([]).includes("name,start_local,organizer"));

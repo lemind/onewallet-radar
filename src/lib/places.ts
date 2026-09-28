@@ -12,6 +12,15 @@ import { findCity } from "./cities.ts";
  */
 const ENDPOINT = "https://places.googleapis.com/v1/places:searchText";
 
+/**
+ * One key for the map and for Places, by choice. It is NEXT_PUBLIC because the
+ * map needs it in the browser, so it is visible in the bundle either way;
+ * restrict it by origin in the Google console rather than by hiding it.
+ */
+function apiKey(): string | undefined {
+  return process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+}
+
 // location fixes the pin; the phone and site are the partner contact the
 // spreadsheet is actually for. Asking for fewer fields would be cheaper.
 const FIELDS =
@@ -24,8 +33,14 @@ const FIELDS =
  */
 const CACHE_DAYS = 30;
 
-/** A runaway loop must not be able to spend the month's quota in one request. */
-const MAX_PER_RUN = 40;
+/**
+ * Hard ceiling on lookups in one run, so a loop cannot spend the month.
+ * Set above the largest city's venue count (Bangkok, ~130) on purpose: a lower
+ * cap would leave the same venues permanently unplaceable, because there is no
+ * way to tell a free cached hit from a paid miss before making the call.
+ * Worst case here is a one-off of roughly 150 calls; every later run is cached.
+ */
+const MAX_LOOKUPS_PER_RUN = 150;
 
 // Google rejects a bias radius over 50km outright, and Chiang Mai's is 75.
 // It only nudges the ranking — the real check is the distance test in run.ts.
@@ -39,6 +54,44 @@ export type Place = {
   website: string | null;
 };
 
+/**
+ * Words that identify nothing. Placeholders, and the city and country names
+ * that appear in every address — without those, "TBA, Bangkok" would match
+ * "TBA Rooftop Bar Bangkok" on the word Bangkok alone.
+ */
+const GENERIC = new Set([
+  "tba", "tbc", "tbd", "online", "venue", "secret", "location", "announced",
+  "bangkok", "chiang", "mai", "phuket", "thailand", "krung", "thep", "nakhon",
+  "district", "amphur", "amphoe", "tambon", "khet", "khwaeng", "road", "rd",
+  "soi", "alley", "lane", "moo", "the", "and",
+]);
+
+/**
+ * Does the place Places returned plausibly answer what we asked?
+ *
+ * Text Search always returns its best guess, so "TBA, Bangkok" comes back as
+ * "TBA Rooftop Bar Bangkok" with a real phone number. Writing that into the
+ * partner sheet is the SPEC.md 9.9 failure — a wrong phone is worse than none.
+ * Require a real word in common between the venue asked for and the name
+ * returned.
+ */
+export function matches(venue: string | null, returned: string | null): boolean {
+  if (!venue || !returned) return false;
+  const words = (t: string) =>
+    new Set(
+      t
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .split(" ")
+        .filter((w) => w.length > 2 && !GENERIC.has(w) && !/^\d+$/.test(w)),
+    );
+  const asked = words(venue);
+  if (asked.size === 0) return false; // nothing distinctive was asked for
+  const got = words(returned);
+  for (const w of asked) if (got.has(w)) return true;
+  return false;
+}
+
 type SearchResponse = {
   places?: {
     displayName?: { text?: string };
@@ -49,7 +102,7 @@ type SearchResponse = {
 };
 
 async function search(query: string, city: CityId): Promise<Place | null> {
-  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+  const key = apiKey();
   if (!key) return null;
   const c = findCity(city);
   if (!c) return null;
@@ -110,11 +163,11 @@ export async function lookup(
   city: CityId,
 ): Promise<Map<string, Place>> {
   const out = new Map<string, Place>();
-  if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY) return out;
+  if (!apiKey()) return out;
   // The same venue often hosts several events in one run; ask once.
-  const unique = [...new Set(queries.filter((q) => q.trim() !== ""))].slice(0, MAX_PER_RUN);
+  const unique = [...new Set(queries.filter((q) => q.trim() !== ""))];
   const found = await Promise.all(
-    unique.map(async (q) => {
+    unique.slice(0, MAX_LOOKUPS_PER_RUN).map(async (q) => {
       try {
         return [q, await cached(q, city)] as const;
       } catch {
@@ -134,4 +187,17 @@ export function queryFor(venue: string | null, address: string | null): string {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 300);
+}
+
+/**
+ * Cache key for a query. Sources spell one venue several ways — "Hemingway"
+ * and "Hemingway, 159 Sukhumvit 55" are the same bar — and each spelling was
+ * being bought separately. Measured 28 Sep: 76 paid lookups, 36 real venues.
+ */
+export function cacheKeyFor(venue: string | null, address: string | null): string {
+  const base = (venue || address || "").toLowerCase();
+  return base
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .slice(0, 80);
 }

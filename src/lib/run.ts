@@ -3,7 +3,7 @@ import { fetchAll, type FetchAllResult, type RawEvent } from "./ldjson.ts";
 import { fetchRa } from "./ra.ts";
 import { SOURCES, urlsFor } from "./sources.ts";
 import { distanceKm, filterEvents } from "./normalize.ts";
-import { lookup, queryFor } from "./places.ts";
+import { lookup, matches, queryFor } from "./places.ts";
 import type { CityId, RunResult, Source, SourceError } from "../types.ts";
 
 /** Fatal for a run. Carries the per-source errors, which are the whole diagnostic. */
@@ -90,18 +90,27 @@ export async function runCity(
     centre: { lat: city.lat, lng: city.lng, radiusKm: city.radiusKm },
   });
 
-  // Place the leads the sources left unplaced. After filtering, so a lookup is
-  // only spent on an event that survived; cached for 30 days in places.ts.
+  // Look the venues up: coordinates for the leads a source left unplaced, and
+  // the phone and website for every named venue — Eventbrite and Luma publish
+  // coordinates, so restricting this to unplaced leads left their contact
+  // columns permanently blank. Runs after filtering so a lookup is only spent
+  // on a surviving lead; cached for 30 days in places.ts.
   const drop = new Set<(typeof events)[number]>();
-  const unplaced = events.filter((e) => e.lat == null && (e.venue || e.address));
-  if (unplaced.length > 0) {
+  const askable = events.filter((e) => e.venue || e.address);
+  if (askable.length > 0) {
     const found = await lookup(
-      unplaced.map((e) => queryFor(e.venue, e.address)),
+      askable.map((e) => queryFor(e.venue, e.address)),
       city.id,
     );
-    for (const e of unplaced) {
+    for (const e of askable) {
       const p = found.get(queryFor(e.venue, e.address));
       if (!p) continue;
+      // Text Search always answers, so "TBA, Bangkok" returns a real bar with a
+      // real phone number. Take nothing unless the name actually corresponds.
+      if (!matches(queryFor(e.venue, e.address), p.name)) continue;
+      e.phone = p.phone;
+      e.website = p.website;
+      if (e.lat != null) continue; // the source already placed it; keep its own
       // The radius check in filterEvents ran before we had these coordinates,
       // so apply it here too: a venue Places puts in the next province is the
       // same mis-filing the rule exists to catch.
@@ -112,8 +121,6 @@ export async function runCity(
       }
       e.lat = p.lat;
       e.lng = p.lng;
-      e.phone = p.phone;
-      e.website = p.website;
       e.located = true;
     }
   }

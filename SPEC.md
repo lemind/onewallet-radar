@@ -379,7 +379,16 @@ against a 10,000 free tier, which is the difference between nothing and about
 $1,600 a month. Failures are never cached; only real answers are.
 
 The same call returns the venue's phone number and website, which fill the
-contact columns in the export.
+contact columns in the export. It runs for every named venue, not only the
+unplaced ones — Eventbrite and Luma publish coordinates, so restricting it to
+unplaced leads left the two best sources exporting blank contacts.
+
+Text Search always answers, so a result is only trusted when its name shares a
+distinctive word with what was asked for. City and country names do not count:
+"TBA, Bangkok" returns "TBA Rooftop Bar Bangkok" with a real phone number, and
+writing that beside a placeholder venue is the 9.9 failure in the export. A pin
+that came from the lookup rather than the source says "approximate location" in
+its popup.
 
 ### 9.4 District is enrichment-only, and therefore a column
 
