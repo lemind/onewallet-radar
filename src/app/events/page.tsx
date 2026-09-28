@@ -3,7 +3,8 @@ import Link from "next/link";
 import { CITIES } from "../../lib/cities.ts";
 import { CITY_COPY } from "../../lib/city-copy.ts";
 import { ldScript } from "../../lib/jsonld.ts";
-import { SITE, BRAND, BRAND_SITE, OG_ALT } from "../../lib/site.ts";
+import { SITE, BRAND, OG_IMAGES } from "../../lib/site.ts";
+import { Crumbs, SiteFooter, crumbLd, type Crumb } from "../Chrome.tsx";
 
 // Static: the hub links to the city pages rather than listing events, so
 // there is nothing here that goes stale within a day.
@@ -15,7 +16,6 @@ const DESCRIPTION =
   "hosting each one and the organizer running it. Updated hourly.";
 
 export function generateMetadata(): Metadata {
-  const images = [{ url: "/opengraph-image", width: 1200, height: 630, alt: OG_ALT }];
   return {
     title: { absolute: TITLE },
     description: DESCRIPTION,
@@ -25,24 +25,23 @@ export function generateMetadata(): Metadata {
       description: DESCRIPTION,
       url: `${SITE}/events`,
       type: "website",
-      images,
+      images: OG_IMAGES,
     },
-    twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images },
+    twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: OG_IMAGES },
   };
 }
 
 // CollectionPage over WebPage: this page exists to lead to the three city
 // pages, and the ItemList is what states that relationship.
+const TRAIL: Crumb[] = [
+  { name: `${BRAND} Radar`, href: "/" },
+  { name: "Events in Thailand", href: "/events" },
+];
+
 const LD = {
   "@context": "https://schema.org",
   "@graph": [
-    {
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: SITE },
-        { "@type": "ListItem", position: 2, name: "Events in Thailand", item: `${SITE}/events` },
-      ],
-    },
+    crumbLd(TRAIL),
     {
       "@type": "CollectionPage",
       "@id": `${SITE}/events`,
@@ -75,9 +74,7 @@ export default function EventsHub() {
   return (
     <main className="wrap">
       <div className="content prose">
-        <nav className="crumbs">
-          <Link href="/">{BRAND} Radar</Link> <span aria-hidden>›</span> Events in Thailand
-        </nav>
+        <Crumbs trail={TRAIL} />
 
         <h1>Events in Thailand</h1>
         <p className="sub">
@@ -125,13 +122,7 @@ export default function EventsHub() {
         </p>
       </div>
 
-      <footer className="foot">
-        A lead finder for{" "}
-        <a href={BRAND_SITE} target="_blank" rel="noreferrer">
-          {BRAND}
-        </a>
-        .
-      </footer>
+      <SiteFooter />
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldScript(LD) }} />
     </main>

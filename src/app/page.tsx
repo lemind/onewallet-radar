@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CITIES } from "../lib/cities.ts";
 import { toCsv, filename } from "../lib/csv.ts";
-import { BRAND, BRAND_SITE } from "../lib/site.ts";
+import { SiteFooter } from "./Chrome.tsx";
 import { LATER as COLOUR_LATER, TODAY as COLOUR_TODAY, bangkokToday, isToday } from "../lib/when.ts";
 import type { RunResult } from "../types.ts";
 import Map from "./Map.tsx";
@@ -214,13 +214,7 @@ export default function Page() {
 
       </div>
 
-      <footer className="foot">
-        A lead finder for{" "}
-        <a href={BRAND_SITE} target="_blank" rel="noreferrer">
-          {BRAND}
-        </a>
-        .
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

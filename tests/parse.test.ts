@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { extractEvents } from "../src/lib/ldjson.ts";
 import { normalize, filterEvents } from "../src/lib/normalize.ts";
-import { parseStart, toLocal } from "../src/lib/time.ts";
+import { parseStart, toLocal, toSchema } from "../src/lib/time.ts";
 import { COLUMNS, toCsv } from "../src/lib/csv.ts";
 
 const HTML = readFileSync(new URL("./fixtures/meetup-chiang-mai.html", import.meta.url), "utf8");
@@ -317,4 +317,37 @@ test("an event image is made absolute, and a shared placeholder is not used", ()
   assert.equal(img(["/images/fallbacks/a.webp", "https://cdn/b.jpg"]), "https://cdn/b.jpg", "skips to a real one");
   assert.equal(img("javascript:alert(1)"), null, "a scraped scheme never reaches the markup");
   assert.equal(img("/images/x.webp", ""), null, "no base to resolve against is a missing image");
+});
+
+test("schema.org dates keep Bangkok's offset and never invent a midnight", () => {
+  // A date-only listing rendered as UTC became 17:00 on the PREVIOUS day.
+  assert.equal(toSchema("2026-09-30", "date"), "2026-09-30");
+  assert.equal(toSchema("2026-09-30 19:00", "datetime"), "2026-09-30T19:00:00+07:00");
+  assert.ok(!toSchema("2026-09-30", "date").includes("T"), "a bare date stays bare");
+  assert.ok(!toSchema("2026-09-30 19:00", "datetime").endsWith("Z"), "never export UTC");
+});
+
+test("html entities are decoded out of scraped text", () => {
+  const name = (n: string) =>
+    normalize({ "@type": "Event", name: n, url: "https://x/1", startDate: "2026-09-28" }).event.name;
+  assert.equal(name("Minimal&amp;Techno Vinyl Sessions"), "Minimal&Techno Vinyl Sessions");
+  assert.equal(name("&quot;Echoes&quot; &#8212; a show"), '"Echoes" — a show');
+  assert.equal(name("Caf&#xe9; night"), "Café night");
+  assert.equal(name("&amp;amp;"), "&amp;", "one pass only: the source escaped a literal entity");
+  assert.equal(name("Q&A with Bob"), "Q&A with Bob", "a bare ampersand is left alone");
+  assert.equal(name("&#0;null"), "&#0;null", "a control character is not decoded");
+});
+
+test("an image candidate that google cannot use is skipped, not fatal", () => {
+  const img = (image: unknown) =>
+    normalize({ "@type": "Event", name: "E", url: "https://m.com/e/1", startDate: "2026-09-28", image })
+      .event.image;
+  assert.equal(
+    img(["data:image/gif;base64,R0lGOD", "https://cdn/real.jpg"]),
+    "https://cdn/real.jpg",
+    "a lazy-load placeholder must not discard the real asset",
+  );
+  assert.equal(img("https://cdn-ip.allevents.in/x.avif"), null, "google does not accept avif");
+  assert.equal(img(["https://cdn/x.avif", "https://cdn/y.png"]), "https://cdn/y.png", "skips to a usable format");
+  assert.equal(img("https://img.evbuc.com/x?w=512"), "https://img.evbuc.com/x?w=512", "no extension is still usable");
 });

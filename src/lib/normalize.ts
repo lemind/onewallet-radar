@@ -3,8 +3,31 @@ import type { RawEvent } from "./ldjson.ts";
 import { parseStart, toLocal } from "./time.ts";
 import { httpUrl } from "./url.ts";
 
+// Sources publish ld+json with HTML entities still in it, so "Minimal&amp;Techno"
+// reached the page, the markup and the spreadsheet verbatim. Measured 28 Sep: 11 names on Bangkok.
+const NAMED: Record<string, string> = {
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0",
+};
+
+/** Decode the entities a scraped string still carries. One pass: "&amp;amp;" is a literal "&amp;". */
+function decode(s: string): string {
+  return s.replace(/&(#\d+|#[xX][\da-fA-F]+|[a-zA-Z]+);/g, (whole, body: string) => {
+    if (body[0] === "#") {
+      const n = body[1] === "x" || body[1] === "X"
+        ? parseInt(body.slice(2), 16)
+        : parseInt(body.slice(1), 10);
+      // Reject control characters and anything outside Unicode; a bad entity stays as written.
+      if (!Number.isFinite(n) || n < 32 || n > 0x10ffff) return whole;
+      return String.fromCodePoint(n);
+    }
+    return NAMED[body.toLowerCase()] ?? whole;
+  });
+}
+
 function str(v: unknown): string | null {
-  return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
+  if (typeof v !== "string") return null;
+  const out = decode(v).trim();
+  return out === "" ? null : out;
 }
 
 /** First entry that carries something usable: a bare v[0] can be null and lose the rest. */
@@ -60,6 +83,10 @@ function flatAddress(loc: unknown): { venue: string | null; address: string | nu
 // REVISIT: drop the filter if meetup stops serving a shared placeholder.
 const PLACEHOLDER = /\/fallbacks?\//i;
 
+// Google's structured-data images are BMP, GIF, JPEG, PNG, WebP or SVG. AVIF is
+// not on the list, and allevents serves it. Measured 28 Sep: 19 of 39 emitted images.
+const UNSUPPORTED = /\.avif\b/i;
+
 /** The photo for the Event structured data: schema.org allows a string, an array or an ImageObject. */
 function imageOf(raw: RawEvent, eventUrl: string): string | null {
   for (const c of Array.isArray(raw.image) ? raw.image : [raw.image]) {
@@ -67,7 +94,9 @@ function imageOf(raw: RawEvent, eventUrl: string): string | null {
     if (!src || PLACEHOLDER.test(src)) continue;
     try {
       // Meetup publishes a site-relative path, so resolve against the event url.
-      return httpUrl(new URL(src, eventUrl || undefined).toString());
+      const abs = httpUrl(new URL(src, eventUrl || undefined).toString());
+      // Keep looking: a lazy-load data: placeholder often precedes the real asset.
+      if (abs && !UNSUPPORTED.test(abs)) return abs;
     } catch {
       continue; // an image we cannot resolve is a missing one, not a broken page
     }

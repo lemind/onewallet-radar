@@ -73,3 +73,8 @@ function ebPaths(slug: string): string[] {
 export function urlsFor(source: Source, city: CityId): string[] {
   return SOURCES.find((s) => s.id === source)?.urls[city] ?? [];
 }
+
+/** How many sources actually answer for a city, counting Resident Advisor, which run.ts adds. */
+export function sourceCount(city: CityId): number {
+  return SOURCES.filter((s) => (s.urls[city]?.length ?? 0) > 0).length + 1;
+}

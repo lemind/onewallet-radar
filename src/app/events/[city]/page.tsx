@@ -6,8 +6,10 @@ import { CITY_COPY } from "../../../lib/city-copy.ts";
 import { ldScript } from "../../../lib/jsonld.ts";
 import { httpUrl } from "../../../lib/url.ts";
 import { runCity } from "../../../lib/run.ts";
-import { SITE, BRAND, BRAND_SITE, OG_ALT } from "../../../lib/site.ts";
-import { parseStart, toLocal } from "../../../lib/time.ts";
+import { SITE, BRAND, OG_IMAGES } from "../../../lib/site.ts";
+import { Crumbs, SiteFooter, crumbLd, type Crumb } from "../../Chrome.tsx";
+import { sourceCount } from "../../../lib/sources.ts";
+import { parseStart, toLocal, toSchema } from "../../../lib/time.ts";
 import type { CityId, Event } from "../../../types.ts";
 
 // Rebuilt hourly: a crawler must get the events as HTML, and scraping six
@@ -61,16 +63,12 @@ export async function generateMetadata({
     `Upcoming events in ${city.label}, Thailand: concerts, club nights, festivals, ` +
     `markets, workshops and meetups, with the venue and organizer behind each one.`;
   const url = `${SITE}/events/${city.id}`;
-  // Declaring openGraph here replaces the root block, and the generated image
-  // does not come with it — so name it. Without this the three pages that
-  // carry the content shared as a blank card. Measured 28 Sep.
-  const images = [{ url: "/opengraph-image", width: 1200, height: 630, alt: OG_ALT }];
   return {
     title: { absolute: title },
     description,
     alternates: { canonical: `/events/${city.id}` },
-    openGraph: { title, description, url, type: "website", images },
-    twitter: { card: "summary_large_image", title, description, images },
+    openGraph: { title, description, url, type: "website", images: OG_IMAGES },
+    twitter: { card: "summary_large_image", title, description, images: OG_IMAGES },
   };
 }
 
@@ -82,7 +80,8 @@ export async function generateMetadata({
 function endDate(end: string | null): string | undefined {
   if (!end) return undefined;
   if (/^\d{4}-\d{2}-\d{2}$/.test(end)) return end;
-  return parseStart(end)?.at.toISOString();
+  const p = parseStart(end);
+  return p ? toSchema(toLocal(p.at, p.precision), p.precision) : undefined;
 }
 
 /** A sentence built only from fields we hold. Nothing here is invented. */
@@ -98,7 +97,9 @@ function eventLd(e: Event, city: string) {
     "@type": "Event",
     name: e.name,
     description: eventDescription(e, city),
-    startDate: e.startUtc || undefined,
+    // startLocal, not startUtc: a date-only source has no time to publish, and a
+    // Bangkok midnight rendered as UTC lands the event on the previous day.
+    startDate: e.startLocal ? toSchema(e.startLocal, e.startPrecision) : undefined,
     // Recommended by Google for Event results, and the difference between a
     // picture in the listing and a bare line. Only what the source published.
     ...(e.image ? { image: e.image } : {}),
@@ -136,28 +137,23 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
   const organizers = [...new Set(events.map((e) => e.organizer).filter(Boolean))] as string[];
   const others = CITIES.filter((c) => c.id !== city.id);
   const copy = CITY_COPY[city.id];
+  const trail: Crumb[] = [
+    { name: `${BRAND} Radar`, href: "/" },
+    { name: "Events in Thailand", href: "/events" },
+    { name: `Events in ${city.label}`, href: `/events/${city.id}` },
+  ];
+  // The markup lists at most 60; numberOfItems has to describe what is there.
+  const listed = events.slice(0, 60);
 
   const ld = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: SITE },
-          { "@type": "ListItem", position: 2, name: "Events in Thailand", item: `${SITE}/events` },
-          {
-            "@type": "ListItem",
-            position: 3,
-            name: `Events in ${city.label}`,
-            item: `${SITE}/events/${city.id}`,
-          },
-        ],
-      },
+      crumbLd(trail),
       {
         "@type": "ItemList",
         name: `Upcoming events in ${city.label}`,
-        numberOfItems: events.length,
-        itemListElement: events.slice(0, 60).map((e, i) => ({
+        numberOfItems: listed.length,
+        itemListElement: listed.map((e, i) => ({
           "@type": "ListItem",
           position: i + 1,
           item: eventLd(e, city.label),
@@ -169,17 +165,13 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
   return (
     <main className="wrap">
       <div className="content prose">
-      <nav className="crumbs">
-        <Link href="/">{BRAND} Radar</Link> <span aria-hidden>›</span>{" "}
-        <Link href="/events">Events in Thailand</Link> <span aria-hidden>›</span> Events in{" "}
-        {city.label}
-      </nav>
+      <Crumbs trail={trail} />
 
       <h1>Events in {city.label}</h1>
       <p className="sub">
         Everything happening in {city.label}, Thailand between {from} and {to} — concerts, club
         nights, festivals, markets, workshops and meetups — together with the venue hosting each one
-        and the organizer running it. Updated hourly from six listing sources.
+        and the organizer running it. Updated hourly from {sourceCount(city.id)} listing sources.
       </p>
 
       <p className="note">
@@ -266,13 +258,7 @@ export default async function CityEvents({ params }: { params: Promise<{ city: s
 
       </div>
 
-      <footer className="foot">
-        A lead finder for{" "}
-        <a href={BRAND_SITE} target="_blank" rel="noreferrer">
-          {BRAND}
-        </a>
-        .
-      </footer>
+      <SiteFooter />
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldScript(ld) }} />
     </main>
