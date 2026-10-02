@@ -36,3 +36,4 @@ Thumbs.db
 # Scrape output is committed - it is the datastore and the offline demo seed.
 next-env.d.ts
 .vercel
+.env*

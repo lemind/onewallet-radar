@@ -23,11 +23,17 @@ export class AllDown extends RunFailed {}
  * Scrape one city over one window. Shared by the API route and the city pages
  * so both see the same leads, filters and error handling.
  */
+/**
+ * `geocode` buys coordinates for venues the file does not hold. Off by default,
+ * and deliberately off for the city pages: those rebuild on a timer, and work
+ * that costs money must never be driven by a clock. Only a human search pays.
+ */
 export async function runCity(
   cityId: CityId,
   from: string,
   to: string,
   signal?: AbortSignal,
+  opts: { geocode?: boolean } = {},
 ): Promise<RunResult> {
   const city = findCity(cityId);
   if (!city) throw new Error(`unknown city: ${cityId}`);
@@ -96,11 +102,13 @@ export async function runCity(
   // ever and written to the store. See lib/venues.ts and lib/venue-store.ts.
   const drop = new Set<(typeof events)[number]>();
   const unplaced = events.filter((e) => e.lat == null && (e.venue || e.address));
-  const learned = await locate(
-    unplaced.filter((e) => !fixedPoint(e.venue, e.address)),
-    city.id,
-    signal,
-  );
+  const learned = opts.geocode
+    ? await locate(
+        unplaced.filter((e) => !fixedPoint(e.venue, e.address)),
+        city.id,
+        signal,
+      )
+    : new Map();
   for (const e of unplaced) {
     const fixed = fixedPoint(e.venue, e.address) ?? learned.get(venueKey(e.venue, e.address));
     if (!fixed) continue;

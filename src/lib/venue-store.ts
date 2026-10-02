@@ -8,8 +8,10 @@
  *  - a monthly counter lives in the store and caps what a month can spend
  *  - no store reachable means no geocoding at all, never a silent fallback
  */
-const URL_ = process.env.KV_REST_API_URL;
-const TOKEN = process.env.KV_REST_API_TOKEN;
+// The marketplace integration names these UPSTASH_*; the KV_* pair is what
+// Vercel's own KV used to set, kept so a different store drops in unchanged.
+const URL_ = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
 
 /**
  * Most a month may buy. Google gives 10,000 geocodes a month free; this stops

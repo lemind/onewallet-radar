@@ -24,7 +24,7 @@ export async function GET(req: Request) {
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), 45_000);
   try {
-    return NextResponse.json(await runCity(city.id, from, to, ac.signal));
+    return NextResponse.json(await runCity(city.id, from, to, ac.signal, { geocode: true }));
   } catch (err) {
     // The per-source errors are the whole diagnostic on this path; a bare
     // "meetup unreachable" cannot tell an abort from a block from a DNS failure.
