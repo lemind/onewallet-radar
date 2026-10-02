@@ -24,10 +24,11 @@ function apiKey(): string | undefined {
   return process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
 }
 
-// location fixes the pin; the phone and site are the partner contact the
-// spreadsheet is actually for. Asking for fewer fields would be cheaper.
-const FIELDS =
-  "places.displayName,places.location,places.nationalPhoneNumber,places.websiteUri";
+// Location and name only. nationalPhoneNumber and websiteUri were also asked
+// for, and those two fields alone move the call onto Google's Enterprise tier:
+// a 1,000/month free cap instead of 10,000, then $35 per 1,000 instead of $32.
+// That cost real money on 2 Oct. Do not add a contact field back here.
+const FIELDS = "places.displayName,places.location";
 
 /**
  * A lookup costs money, so the result is cached for 30 days: a venue does not
