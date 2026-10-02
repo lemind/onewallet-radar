@@ -10,6 +10,9 @@
  */
 // The marketplace integration names these UPSTASH_*; the KV_* pair is what
 // Vercel's own KV used to set, kept so a different store drops in unchanged.
+import type { Fixed, Known } from "./venues.ts";
+export type { Fixed, Known };
+
 const URL_ = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
 
@@ -18,8 +21,6 @@ const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TO
  * well short so a loop or a bad key cannot reach the paid band at all.
  */
 export const MONTHLY_CAP = 2_000;
-
-export type Fixed = { lat: number; lng: number };
 
 /** Configured at all? Without both halves nothing here touches the network. */
 export function storeReady(): boolean {
@@ -51,9 +52,6 @@ async function cmd(args: (string | number)[], signal?: AbortSignal): Promise<unk
 function monthKey(now = new Date()): string {
   return `geo:spend:${now.toISOString().slice(0, 7)}`;
 }
-
-/** "hit" with a point, "miss" for looked-up-and-not-found, "unknown" for never asked. */
-export type Known = { state: "hit"; at: Fixed } | { state: "miss" } | { state: "unknown" };
 
 export async function recall(key: string, signal?: AbortSignal): Promise<Known> {
   const raw = await cmd(["GET", `venue:${key}`], signal);

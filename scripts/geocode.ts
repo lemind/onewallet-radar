@@ -65,8 +65,9 @@ async function wanted(): Promise<Want[]> {
 type Hit = { lat: number; lng: number } | null;
 
 async function google(q: string, city: Want["city"]): Promise<Hit> {
-  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-  if (!key) throw new Error("NEXT_PUBLIC_GOOGLE_MAPS_KEY is not set");
+  // Server-only key, the same one the runtime uses. Never the map key.
+  const key = process.env.GOOGLE_GEOCODING_KEY;
+  if (!key) throw new Error("GOOGLE_GEOCODING_KEY is not set");
   const url =
     `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}` +
     `&region=th&bounds=${city.lat - 1},${city.lng - 1}|${city.lat + 1},${city.lng + 1}&key=${key}`;

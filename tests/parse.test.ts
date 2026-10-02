@@ -98,8 +98,6 @@ test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
       organizerUrl: null,
       performer: null,
       image: null,
-      phone: null,
-      website: null,
       located: false,
     },
   ]);
@@ -113,8 +111,6 @@ test("csv opens in Excel: BOM, CRLF, quoted commas, Thai intact", () => {
   const [header, first] = csv.replace("\ufeff", "").split("\r\n");
   assert.equal(header.split(",").length, COLUMNS.length, "header width");
   assert.equal(splitCsv(first).length, COLUMNS.length, "row width matches header");
-  assert.equal(COLUMNS.indexOf("phone"), 6);
-  assert.equal(COLUMNS.indexOf("website"), 7);
   assert.equal(splitCsv(first)[COLUMNS.indexOf("venue")], 'The "Edge"');
 });
 
@@ -208,8 +204,7 @@ test("Excel formula characters are neutralised, so a phone number stays a phone 
   const csv = toCsv([{
     source: "meetup", name: "n", url: "u", startUtc: "", startLocal: "2026-09-27",
     startPrecision: "date", end: null, online: false, lat: null, lng: null, venue: "=Escape Hunt",
-    address: "+66 2 656 1000", organizer: null, organizerUrl: null, performer: null, image: null,
-    phone: null, website: null, located: false,
+    address: "+66 2 656 1000", organizer: null, organizerUrl: null, performer: null, image: null, located: false,
   }]);
   const row = csv.split("\r\n")[1];
   assert.ok(!/,=Escape/.test(row), "a leading = must not reach Excel bare");

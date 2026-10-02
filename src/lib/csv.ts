@@ -7,8 +7,6 @@ export const COLUMNS = [
   "organizer_url",
   "venue",
   "address",
-  "phone",
-  "website",
   "source",
   "url",
 ] as const;
@@ -29,8 +27,6 @@ function row(e: Event): string {
     e.organizerUrl,
     e.venue,
     e.address,
-    e.phone,
-    e.website,
     e.source,
     e.url,
   ]

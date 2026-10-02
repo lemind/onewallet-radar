@@ -3,7 +3,7 @@ import { fetchAll, type FetchAllResult, type RawEvent } from "./ldjson.ts";
 import { fetchRa } from "./ra.ts";
 import { SOURCES, urlsFor } from "./sources.ts";
 import { distanceKm, filterEvents } from "./normalize.ts";
-import { fixedPoint, venueKey } from "./venues.ts";
+import { fromFile, venueKey } from "./venues.ts";
 import { locate } from "./geocode.ts";
 import type { CityId, RunResult, Source, SourceError } from "../types.ts";
 
@@ -102,15 +102,19 @@ export async function runCity(
   // ever and written to the store. See lib/venues.ts and lib/venue-store.ts.
   const drop = new Set<(typeof events)[number]>();
   const unplaced = events.filter((e) => e.lat == null && (e.venue || e.address));
+  // Only the venues the file has never been asked about reach a paid lookup.
+  // A recorded miss stays a miss: re-asking is what put city centres on the map.
   const learned = opts.geocode
     ? await locate(
-        unplaced.filter((e) => !fixedPoint(e.venue, e.address)),
+        unplaced.filter((e) => fromFile(e.venue, e.address).state === "unknown"),
         city.id,
         signal,
       )
     : new Map();
   for (const e of unplaced) {
-    const fixed = fixedPoint(e.venue, e.address) ?? learned.get(venueKey(e.venue, e.address));
+    const known = fromFile(e.venue, e.address);
+    if (known.state === "miss") continue;
+    const fixed = known.state === "hit" ? known.at : learned.get(venueKey(e.venue, e.address));
     if (!fixed) continue;
     // filterEvents ran its radius check before we had these coordinates, so
     // apply it here too: a venue in the next province is the same mis-filing.
