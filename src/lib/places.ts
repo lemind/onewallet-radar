@@ -18,6 +18,9 @@ const ENDPOINT = "https://places.googleapis.com/v1/places:searchText";
  * restrict it by origin in the Google console rather than by hiding it.
  */
 function apiKey(): string | undefined {
+  // OFF by default. Paid lookups ran on every page rebuild and every search and
+  // cost real money; set PLACES_ENABLED=1 to turn them back on deliberately.
+  if (process.env.PLACES_ENABLED !== "1") return undefined;
   return process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
 }
 
