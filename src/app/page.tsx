@@ -181,8 +181,8 @@ export default function Page() {
           Radar collects events that are already published — on Meetup, Eventbrite, Luma,
           AllEvents and Resident Advisor — and puts the businesses behind them in one list. Pick a
           city and a date range and you get every event running in that window with the venue
-          hosting it, the organizer running it, an address, a map pin and, where we can match the
-          venue, a phone number and a website. The whole result downloads as a spreadsheet.
+          hosting it, the organizer running it, an address and a map pin. The whole result
+          downloads as a spreadsheet.
         </p>
 
         <h2>Why venues and organizers</h2>
@@ -197,9 +197,9 @@ export default function Page() {
         <p>
           Nothing here is written by hand and no detail is inferred. An event whose organizer
           published a date but no start time is shown as a date, not as midnight. A venue we
-          cannot match confidently is left without a phone number rather than given someone
-          else's. Every row keeps a link to the listing it came from, so anything can be checked
-          at the source.
+          cannot place confidently gets no pin rather than a guess at the middle of the city.
+          Every row keeps a link to the listing it came from, so anything can be checked at the
+          source.
         </p>
 
         <h2>Cities covered</h2>

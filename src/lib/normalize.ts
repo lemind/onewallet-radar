@@ -172,8 +172,6 @@ export function normalize(raw: RawEvent, source: Source = "meetup"): Normalized 
       online: isOnline(raw.eventAttendanceMode),
       lat,
       lng,
-      phone: null,
-      website: null,
       located: false,
       // str(org), not str(raw.organizer): first() already unwrapped the array, and
       // an array reaching str() is rejected, losing the organizer and the lead.

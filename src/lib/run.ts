@@ -3,7 +3,8 @@ import { fetchAll, type FetchAllResult, type RawEvent } from "./ldjson.ts";
 import { fetchRa } from "./ra.ts";
 import { SOURCES, urlsFor } from "./sources.ts";
 import { distanceKm, filterEvents } from "./normalize.ts";
-import { lookup, matches, queryFor } from "./places.ts";
+import { fromFile, venueKey } from "./venues.ts";
+import { locate } from "./geocode.ts";
 import type { CityId, RunResult, Source, SourceError } from "../types.ts";
 
 /** Fatal for a run. Carries the per-source errors, which are the whole diagnostic. */
@@ -22,11 +23,17 @@ export class AllDown extends RunFailed {}
  * Scrape one city over one window. Shared by the API route and the city pages
  * so both see the same leads, filters and error handling.
  */
+/**
+ * `geocode` buys coordinates for venues the file does not hold. Off by default,
+ * and deliberately off for the city pages: those rebuild on a timer, and work
+ * that costs money must never be driven by a clock. Only a human search pays.
+ */
 export async function runCity(
   cityId: CityId,
   from: string,
   to: string,
   signal?: AbortSignal,
+  opts: { geocode?: boolean } = {},
 ): Promise<RunResult> {
   const city = findCity(cityId);
   if (!city) throw new Error(`unknown city: ${cityId}`);
@@ -90,39 +97,35 @@ export async function runCity(
     centre: { lat: city.lat, lng: city.lng, radiusKm: city.radiusKm },
   });
 
-  // Look the venues up: coordinates for the leads a source left unplaced, and
-  // the phone and website for every named venue — Eventbrite and Luma publish
-  // coordinates, so restricting this to unplaced leads left their contact
-  // columns permanently blank. Runs after filtering so a lookup is only spent
-  // on a surviving lead; cached for 30 days in places.ts.
+  // Place the leads a source left unplaced. The file in the repository answers
+  // first and costs nothing; anything it does not hold is geocoded at most once
+  // ever and written to the store. See lib/venues.ts and lib/venue-store.ts.
   const drop = new Set<(typeof events)[number]>();
-  const askable = events.filter((e) => e.venue || e.address);
-  if (askable.length > 0) {
-    const found = await lookup(
-      askable.map((e) => queryFor(e.venue, e.address)),
-      city.id,
-    );
-    for (const e of askable) {
-      const p = found.get(queryFor(e.venue, e.address));
-      if (!p) continue;
-      // Text Search always answers, so "TBA, Bangkok" returns a real bar with a
-      // real phone number. Take nothing unless the name actually corresponds.
-      if (!matches(queryFor(e.venue, e.address), p.name)) continue;
-      e.phone = p.phone;
-      e.website = p.website;
-      if (e.lat != null) continue; // the source already placed it; keep its own
-      // The radius check in filterEvents ran before we had these coordinates,
-      // so apply it here too: a venue Places puts in the next province is the
-      // same mis-filing the rule exists to catch.
-      if (distanceKm(city.lat, city.lng, p.lat, p.lng) > city.radiusKm) {
-        dropped.farAway++;
-        drop.add(e);
-        continue;
-      }
-      e.lat = p.lat;
-      e.lng = p.lng;
-      e.located = true;
+  const unplaced = events.filter((e) => e.lat == null && (e.venue || e.address));
+  // Only the venues the file has never been asked about reach a paid lookup.
+  // A recorded miss stays a miss: re-asking is what put city centres on the map.
+  const learned = opts.geocode
+    ? await locate(
+        unplaced.filter((e) => fromFile(e.venue, e.address).state === "unknown"),
+        city.id,
+        signal,
+      )
+    : new Map();
+  for (const e of unplaced) {
+    const known = fromFile(e.venue, e.address);
+    if (known.state === "miss") continue;
+    const fixed = known.state === "hit" ? known.at : learned.get(venueKey(e.venue, e.address));
+    if (!fixed) continue;
+    // filterEvents ran its radius check before we had these coordinates, so
+    // apply it here too: a venue in the next province is the same mis-filing.
+    if (distanceKm(city.lat, city.lng, fixed.lat, fixed.lng) > city.radiusKm) {
+      dropped.farAway++;
+      drop.add(e);
+      continue;
     }
+    e.lat = fixed.lat;
+    e.lng = fixed.lng;
+    e.located = true;
   }
   const kept = drop.size > 0 ? events.filter((e) => !drop.has(e)) : events;
 

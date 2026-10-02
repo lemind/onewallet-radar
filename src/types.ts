@@ -21,9 +21,6 @@ export type Event = {
   performer: string | null;
   /** Event photo the source published, absolute. For structured data only — never exported. */
   image: string | null;
-  /** From Google Places, for venues the source left unplaced. See SPEC.md 9.4. */
-  phone: string | null;
-  website: string | null;
   /** True when the coordinates came from Places rather than the source. */
   located: boolean;
   /** True when the source says it is online-only: an organizer lead, no venue. */

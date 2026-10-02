@@ -117,7 +117,7 @@ export default function EventsHub() {
           The point is not the events themselves but the businesses behind them. A venue hosting
           four nights a month and a promoter filling it are both worth a conversation, and neither
           appears on a directory. <Link href="/">Search a date range</Link> to pull a city's
-          listings with the venues, addresses and contacts attached, and export the result as a
+          listings with the venues, organizers and addresses attached, and export the result as a
           spreadsheet.
         </p>
       </div>
