@@ -3,7 +3,8 @@ import { fetchAll, type FetchAllResult, type RawEvent } from "./ldjson.ts";
 import { fetchRa } from "./ra.ts";
 import { SOURCES, urlsFor } from "./sources.ts";
 import { distanceKm, filterEvents } from "./normalize.ts";
-import { fixedPoint } from "./venues.ts";
+import { fixedPoint, venueKey } from "./venues.ts";
+import { locate } from "./geocode.ts";
 import type { CityId, RunResult, Source, SourceError } from "../types.ts";
 
 /** Fatal for a run. Carries the per-source errors, which are the whole diagnostic. */
@@ -90,12 +91,18 @@ export async function runCity(
     centre: { lat: city.lat, lng: city.lng, radiusKm: city.radiusKm },
   });
 
-  // Place the leads a source left unplaced, from the file in the repository.
-  // This used to be a paid Google lookup on every rebuild; see lib/venues.ts.
+  // Place the leads a source left unplaced. The file in the repository answers
+  // first and costs nothing; anything it does not hold is geocoded at most once
+  // ever and written to the store. See lib/venues.ts and lib/venue-store.ts.
   const drop = new Set<(typeof events)[number]>();
-  for (const e of events) {
-    if (e.lat != null || (!e.venue && !e.address)) continue;
-    const fixed = fixedPoint(e.venue, e.address);
+  const unplaced = events.filter((e) => e.lat == null && (e.venue || e.address));
+  const learned = await locate(
+    unplaced.filter((e) => !fixedPoint(e.venue, e.address)),
+    city.id,
+    signal,
+  );
+  for (const e of unplaced) {
+    const fixed = fixedPoint(e.venue, e.address) ?? learned.get(venueKey(e.venue, e.address));
     if (!fixed) continue;
     // filterEvents ran its radius check before we had these coordinates, so
     // apply it here too: a venue in the next province is the same mis-filing.
