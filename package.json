@@ -11,7 +11,7 @@
     "start": "next start",
     "test": "node --import tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "geocode": "node --import tsx scripts/geocode.ts"
+    "geocode": "node --env-file=.env.local --import tsx scripts/geocode.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
